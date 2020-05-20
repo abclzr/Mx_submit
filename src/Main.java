@@ -35,6 +35,7 @@ public class Main {
         ASTBuilder a = new ASTBuilder();
         return a.visit(root);
     }
+//clang-9 --target=riscv32 -march=rv32ima test.s -c
 
     public static void main(String... args) throws Exception {
         try {

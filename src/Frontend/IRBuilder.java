@@ -100,6 +100,7 @@ public class IRBuilder extends ASTVisitor {
                 //create all code segments and its parameters' virtual registers for all class methods
                 ((ClassDeclNode) x).getMethodDeclNodeList().forEach(y -> {
                     CodeSegment cs = new CodeSegment(y.getFuncSymbol());
+                    cs.setFuncName(((ClassDeclNode) x).getIdentifier() + "." + cs.getFuncName());
                     cs.setClassType(((ClassDeclNode) x).getClassType());
                     cs.setRaPointer(new VirtualRegister(cs, Scope.intType));
                     segmentList.add(cs);
