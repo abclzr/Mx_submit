@@ -195,9 +195,10 @@ public class Scope {
     public VariableSymbol findVar(String var, Position pos) {
         if (varMap.containsKey(var)) {
             VariableSymbol v = varMap.get(var);
-            if(v.getDefine().getPosition().getRow() < pos.getRow() ||
+            if ((v.getDefine().getPosition().getRow() < pos.getRow() ||
                     (v.getDefine().getPosition().getRow() == pos.getRow()
                     && v.getDefine().getPosition().getCol() < pos.getCol()))
+                || v.getAddrInClass() != null)
                 return v;
         }
         if (fatherScope != null) return fatherScope.findVar(var, pos);
