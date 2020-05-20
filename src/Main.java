@@ -54,7 +54,7 @@ public class Main {
             irBuilder.visit((ProgramNode) root);
             //irBuilder.printall();
 
-            PrintStream ps = new PrintStream(new FileOutputStream("test.s"));
+            PrintStream ps = new PrintStream(new FileOutputStream("output.s"));
             System.setOut(ps);
             irBuilder.codegen();
         } catch (Exception e) {
