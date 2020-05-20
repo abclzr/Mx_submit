@@ -13,6 +13,61 @@ public abstract class IRInstruction {
 
     public abstract String getMessage();
 
+    public static void SW(String rd, int offset, String rs) {
+        if (-2048 <= offset && offset <= 2047)
+            sw(rd, offset + "(" + rs + ")");
+        else {
+            li("t5", offset);
+            add("t5", "t5", rs);
+            sw(rd, "0(t5)");
+        }
+    }
+    public static void SH(String rd, int offset, String rs) {
+        if (-2048 <= offset && offset <= 2047)
+            sh(rd, offset + "(" + rs + ")");
+        else {
+            li("t5", offset);
+            add("t5", "t5", rs);
+            sh(rd, "0(t5)");
+        }
+    }
+    public static void SB(String rd, int offset, String rs) {
+        if (-2048 <= offset && offset <= 2047)
+            sb(rd, offset + "(" + rs + ")");
+        else {
+            li("t5", offset);
+            add("t5", "t5", rs);
+            sb(rd, "0(t5)");
+        }
+    }
+
+    public static void LW(String rd, int offset, String rs) {
+        if (-2048 <= offset && offset <= 2047)
+            lw(rd, offset + "(" + rs + ")");
+        else {
+            li("t5", offset);
+            add("t5", "t5", rs);
+            lw(rd, "0(t5)");
+        }
+    }
+    public static void LH(String rd, int offset, String rs) {
+        if (-2048 <= offset && offset <= 2047)
+            lh(rd, offset + "(" + rs + ")");
+        else {
+            li("t5", offset);
+            add("t5", "t5", rs);
+            lh(rd, "0(t5)");
+        }
+    }
+    public static void LB(String rd, int offset, String rs) {
+        if (-2048 <= offset && offset <= 2047)
+            lb(rd, offset + "(" + rs + ")");
+        else {
+            li("t5", offset);
+            add("t5", "t5", rs);
+            lb(rd, "0(t5)");
+        }
+    }
     public static void la(String rd, String symbol) {
         System.out.println("\tla " + rd + ", " + symbol);
     }
@@ -116,6 +171,14 @@ public abstract class IRInstruction {
 //                    case "+":
     public static void add(String rd, String r1, String r2) {
         System.out.println("\tadd " + rd + ", " + r1 + ", " + r2);
+    }
+    public static void ADDI(String rd, String r1, int r2) {
+        if (-2048 <= r2 && r2 <= 2047)
+            addi(rd, r1, String.valueOf(r2));
+        else {
+            li("t5", r2);
+            add(rd, r1, "t5");
+        }
     }
     public static void addi(String rd, String r1, String r2) {
         System.out.println("\taddi " + rd + ", " + r1 + ", " + r2);

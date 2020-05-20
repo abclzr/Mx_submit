@@ -26,11 +26,11 @@ public class SLoadInstruction extends IRInstruction {
     @Override
     public void codegen() {
         if (width == 4) {
-            lw("t1", offset.getAddr() + "(sp)");
-            sw("t1", lhs.getAddrValue() + "(sp)");
+            LW("t1", offset.getAddr(), "sp");
+            SW("t1", lhs.getAddrValue(), "sp");
         } else {
-            lb("t1", offset.getAddr() + "(sp)");
-            sb("t1", lhs.getAddrValue() + "(sp)");
+            LB("t1", offset.getAddr(), "sp");
+            SB("t1", lhs.getAddrValue(), "sp");
         }
     }
 

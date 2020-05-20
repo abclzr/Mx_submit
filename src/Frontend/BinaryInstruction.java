@@ -34,13 +34,18 @@ public class BinaryInstruction extends IRInstruction {
         if (rhs1 != null) {
             if (is_imm) {
                 if (rhs1.getWidth() == 4) {
-                    lw("t1", rhs1.getAddrValue() + "(sp)");
+                    LW("t1", rhs1.getAddrValue(), "sp");
                 } else {
-                    lb("t1", rhs1.getAddrValue() + "(sp)");
+                    LB("t1", rhs1.getAddrValue(), "sp");
                 }
                 switch (bop) {
                     case "+":
-                        addi("t3", "t1", String.valueOf(imm_rhs2));
+                        if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
+                            addi("t3", "t1", String.valueOf(imm_rhs2));
+                        else {
+                            li("t2", imm_rhs2);
+                            add("t3", "t1", "t2");
+                        }
                         break;
                     case "<=":
                         li("t2", imm_rhs2);
@@ -48,11 +53,22 @@ public class BinaryInstruction extends IRInstruction {
                         xori("t3", "t3", "1");
                         break;
                     case ">=":
-                        slti("t3", "t1", String.valueOf(imm_rhs2));
-                        xori("t3", "t3", "1");
+                        if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047) {
+                            slti("t3", "t1", String.valueOf(imm_rhs2));
+                            xori("t3", "t3", "1");
+                        } else {
+                            li("t2", imm_rhs2);
+                            slt("t3", "t1", "t2");
+                            xori("t3", "t3", "1");
+                        }
                         break;
                     case "<":
-                        slti("t3", "t1", String.valueOf(imm_rhs2));
+                        if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
+                            slti("t3", "t1", String.valueOf(imm_rhs2));
+                        else {
+                            li("t2", imm_rhs2);
+                            slt("t3", "t1", "t2");
+                        }
                         break;
                     case ">":
                         li("t2", imm_rhs2);
@@ -75,41 +91,76 @@ public class BinaryInstruction extends IRInstruction {
                         rem("t3", "t1", "t2");
                         break;
                     case "<<":
-                        slli("t3", "t1", String.valueOf(imm_rhs2));
+                        if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
+                            slli("t3", "t1", String.valueOf(imm_rhs2));
+                        else {
+                            li("t2", imm_rhs2);
+                            sll("t3", "t1", "t2");
+                        }
                         break;
                     case ">>":
-                        srai("t3", "t1", String.valueOf(imm_rhs2));
+                        if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
+                            srai("t3", "t1", String.valueOf(imm_rhs2));
+                        else {
+                            li("t2", imm_rhs2);
+                            sra("t3", "t1", "t2");
+                        }
                         break;
                     case "&":
-                        andi("t3", "t1", String.valueOf(imm_rhs2));
+                        if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
+                            andi("t3", "t1", String.valueOf(imm_rhs2));
+                        else {
+                            li("t2", imm_rhs2);
+                            and("t3", "t1", "t2");
+                        }
                         break;
                     case "^":
-                        xori("t3", "t1", String.valueOf(imm_rhs2));
+                        if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
+                            xori("t3", "t1", String.valueOf(imm_rhs2));
+                        else {
+                            li("t2", imm_rhs2);
+                            xor("t3", "t1", "t2");
+                        }
                         break;
                     case "|":
-                        ori("t3", "t1", String.valueOf(imm_rhs2));
+                        if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
+                            ori("t3", "t1", String.valueOf(imm_rhs2));
+                        else {
+                            li("t2", imm_rhs2);
+                            or("t3", "t1", "t2");
+                        }
                         break;
                     case "==":
-                        xori("t3", "t1", String.valueOf(imm_rhs2));
+                        if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
+                            xori("t3", "t1", String.valueOf(imm_rhs2));
+                        else {
+                            li("t2", imm_rhs2);
+                            xor("t3", "t1", "t2");
+                        }
                         seqz("t3", "t3");
                         break;
                     case "!=":
-                        xori("t3", "t1", String.valueOf(imm_rhs2));
+                        if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
+                            xori("t3", "t1", String.valueOf(imm_rhs2));
+                        else {
+                            li("t2", imm_rhs2);
+                            xor("t3", "t1", "t2");
+                        }
                         snez("t3", "t3");
                         break;
                 }
                 if (width == 4) {
-                    sw("t3", lhs.getAddrValue() + "(sp)");
+                    SW("t3", lhs.getAddrValue(), "sp");
                 } else {
-                    sb("t3", lhs.getAddrValue() + "(sp)");
+                    SB("t3", lhs.getAddrValue(), "sp");
                 }
             } else {
                 if (rhs1.getWidth() == 4) {
-                    lw("t1", rhs1.getAddrValue() + "(sp)");
-                    lw("t2", rhs2.getAddrValue() + "(sp)");
+                    LW("t1", rhs1.getAddrValue(), "sp");
+                    LW("t2", rhs2.getAddrValue(), "sp");
                 } else {
-                    lb("t1", rhs1.getAddrValue() + "(sp)");
-                    lb("t2", rhs2.getAddrValue() + "(sp)");
+                    LB("t1", rhs1.getAddrValue(), "sp");
+                    LB("t2", rhs2.getAddrValue(), "sp");
                 }
                 switch (bop) {
                     case "+":
@@ -166,16 +217,21 @@ public class BinaryInstruction extends IRInstruction {
                         break;
                 }
                 if (width == 4) {
-                    sw("t3", lhs.getAddrValue() + "(sp)");
+                    SW("t3", lhs.getAddrValue(), "sp");
                 } else {
-                    sb("t3", lhs.getAddrValue() + "(sp)");
+                    SB("t3", lhs.getAddrValue(), "sp");
                 }
             }
         } else {
             if (is_imm) {
                 switch (bop) {
                     case "+":
-                        addi("t3", "x0", String.valueOf(imm_rhs2));
+                        if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
+                            addi("t3", "x0", String.valueOf(imm_rhs2));
+                        else {
+                            li("t2", imm_rhs2);
+                            add("t3", "x0", "t2");
+                        }
                         break;
                     case "<=":
                         li("t2", imm_rhs2);
@@ -183,11 +239,21 @@ public class BinaryInstruction extends IRInstruction {
                         xori("t3", "t3", "1");
                         break;
                     case ">=":
-                        slti("t3", "x0", String.valueOf(imm_rhs2));
+                        if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
+                            slti("t3", "x0", String.valueOf(imm_rhs2));
+                        else {
+                            li("t2", imm_rhs2);
+                            slt("t3", "x0", "t2");
+                        }
                         xori("t3", "t3", "1");
                         break;
                     case "<":
-                        slti("t3", "x0", String.valueOf(imm_rhs2));
+                        if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
+                            slti("t3", "x0", String.valueOf(imm_rhs2));
+                        else {
+                            li("t2", imm_rhs2);
+                            slt("t3", "x0", "t2");
+                        }
                         break;
                     case ">":
                         li("t2", imm_rhs2);
@@ -198,8 +264,10 @@ public class BinaryInstruction extends IRInstruction {
                         sub("t3", "x0", "t2");
                         break;
                     case "*":
-                        li("t2", imm_rhs2);
-                        mul("t3", "x0", "t2");
+                    case "&":
+                    case "<<":
+                    case ">>":
+                        mv("t3", "x0");
                         break;
                     case "/":
                         li("t2", imm_rhs2);
@@ -209,40 +277,29 @@ public class BinaryInstruction extends IRInstruction {
                         li("t2", imm_rhs2);
                         rem("t3", "x0", "t2");
                         break;
-                    case "<<":
-                        slli("t3", "x0", String.valueOf(imm_rhs2));
-                        break;
-                    case ">>":
-                        srai("t3", "x0", String.valueOf(imm_rhs2));
-                        break;
-                    case "&":
-                        andi("t3", "x0", String.valueOf(imm_rhs2));
-                        break;
                     case "^":
-                        xori("t3", "x0", String.valueOf(imm_rhs2));
-                        break;
                     case "|":
-                        ori("t3", "x0", String.valueOf(imm_rhs2));
+                        li("t3", imm_rhs2);
                         break;
                     case "==":
-                        xori("t3", "x0", String.valueOf(imm_rhs2));
-                        seqz("t3", "t3");
+                        li("t2", imm_rhs2);
+                        seqz("t3", "t2");
                         break;
                     case "!=":
-                        xori("t3", "x0", String.valueOf(imm_rhs2));
-                        snez("t3", "t3");
+                        li("t2", imm_rhs2);
+                        snez("t3", "t2");
                         break;
                 }
                 if (width == 4) {
-                    sw("t3", lhs.getAddrValue() + "(sp)");
+                    SW("t3", lhs.getAddrValue(), "sp");
                 } else {
-                    sb("t3", lhs.getAddrValue() + "(sp)");
+                    SB("t3", lhs.getAddrValue(), "sp");
                 }
             } else {
                 if (rhs2.getWidth() == 4) {
-                    lw("t2", rhs2.getAddrValue() + "(sp)");
+                    LW("t2", rhs2.getAddrValue(), "sp");
                 } else {
-                    lb("t2", rhs2.getAddrValue() + "(sp)");
+                    LB("t2", rhs2.getAddrValue(), "sp");
                 }
                 switch (bop) {
                     case "+":
@@ -299,9 +356,9 @@ public class BinaryInstruction extends IRInstruction {
                         break;
                 }
                 if (width == 4) {
-                    sw("t3", lhs.getAddrValue() + "(sp)");
+                    SW("t3", lhs.getAddrValue(), "sp");
                 } else {
-                    sb("t3", lhs.getAddrValue() + "(sp)");
+                    SB("t3", lhs.getAddrValue(), "sp");
                 }
             }
         }

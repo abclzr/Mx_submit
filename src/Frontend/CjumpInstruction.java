@@ -15,7 +15,7 @@ public class CjumpInstruction extends IRInstruction {
 
     @Override
     public void codegen() {
-        lb("t1", c.getAddrValue() + "(sp)");
+        LB("t1", c.getAddrValue(), "sp");
         if (jump_when_true)
             bnez("t1", des.getName());
         else

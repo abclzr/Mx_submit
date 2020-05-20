@@ -25,11 +25,11 @@ public class MallocInstruction extends IRInstruction {
         if (this.is_class_malloc) {
             li("a0", malloc_size_int);
             call("malloc");
-            sw("a0", start_addr.getAddrValue() + "(sp)");
+            SW("a0", start_addr.getAddrValue(), "sp");
         } else {
-            lw("a0", malloc_size.getAddrValue() + "(sp)");
+            LW("a0", malloc_size.getAddrValue(), "sp");
             call("malloc");
-            sw("a0", start_addr.getAddrValue() + "(sp)");
+            SW("a0", start_addr.getAddrValue(), "sp");
         }
     }
 

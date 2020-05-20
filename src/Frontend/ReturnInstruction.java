@@ -13,15 +13,15 @@ public class ReturnInstruction extends IRInstruction {
     @Override
     public void codegen() {
         if (enclosureSegment.getRaPointer() != null)
-            lw("ra", enclosureSegment.getRaPointer().getAddrValue() + "(sp)");
+            LW("ra", enclosureSegment.getRaPointer().getAddrValue(), "sp");
         if (returnValue != null)
             if (returnValue.getWidth() == 4)
-                lw("a0", returnValue.getAddrValue() + "(sp)");
+                LW("a0", returnValue.getAddrValue(), "sp");
             else
-                lb("a0", returnValue.getAddrValue() + "(sp)");
+                LB("a0", returnValue.getAddrValue(), "sp");
         else
             mv("a0", "x0");
-        addi("sp", "sp", String.valueOf(enclosureSegment.getStackStorage()));
+        ADDI("sp", "sp", enclosureSegment.getStackStorage());
         ret();
     }
 

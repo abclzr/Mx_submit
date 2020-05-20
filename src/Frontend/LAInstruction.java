@@ -18,7 +18,7 @@ public class LAInstruction extends IRInstruction {
     @Override
     public void codegen() {
         la("t1", gv);
-        sw("t1", lhs.getAddrValue() + "(sp)");
+        SW("t1", lhs.getAddrValue(), "sp");
     }
 
     @Override

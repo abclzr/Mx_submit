@@ -26,20 +26,20 @@ public class CopyInstruction extends IRInstruction {
         switch (tp) {
             case reg_to_reg:
                 if (rhs.getWidth() == 4)
-                    lw("t1", rhs.getAddrValue() + "(sp)");
+                    LW("t1", rhs.getAddrValue(), "sp");
                 else
-                    lb("t1", rhs.getAddrValue() + "(sp)");
+                    LB("t1", rhs.getAddrValue(), "sp");
                 if (lhs.getWidth() == 4)
-                    sw("t1", lhs.getAddrValue() + "(sp)");
+                    SW("t1", lhs.getAddrValue(), "sp");
                 else
-                    sb("t1", lhs.getAddrValue() + "(sp)");
+                    SB("t1", lhs.getAddrValue(), "sp");
                 break;
             case val_to_reg:
                 li("t1", rhs_int);
                 if (lhs.getWidth() == 4)
-                    sw("t1", lhs.getAddrValue() + "(sp)");
+                    SW("t1", lhs.getAddrValue(), "sp");
                 else
-                    sb("t1", lhs.getAddrValue() + "(sp)");
+                    SB("t1", lhs.getAddrValue(), "sp");
                 break;
         }
     }

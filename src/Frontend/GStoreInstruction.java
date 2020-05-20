@@ -19,10 +19,10 @@ public class GStoreInstruction extends IRInstruction {
     public void codegen() {
         la("t1", gv);
         if (value.getWidth() == 4) {
-            lw("t2", value.getAddrValue() + "(sp)");
+            LW("t2", value.getAddrValue(), "sp");
             sw("t2", "0(t1)");
         } else {
-            lb("t2", value.getAddrValue() + "(sp)");
+            LB("t2", value.getAddrValue(), "sp");
             sb("t2", "0(t1)");
         }
     }

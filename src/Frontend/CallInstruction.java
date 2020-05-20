@@ -36,17 +36,17 @@ public class CallInstruction extends IRInstruction {
         for (VirtualRegister p : params) {
             if (i <= 7) {
                 if (p.getWidth() == 4)
-                    lw("a" + i, p.getAddrValue() + "(sp)");
+                    LW("a" + i, p.getAddrValue(), "sp");
                 else
-                    lb("a" + i, p.getAddrValue() + "(sp)");
+                    LB("a" + i, p.getAddrValue(), "sp");
             } else {
                 int offset = -callee.getStackStorage() + callee.getParams().get(i).getAddrValue();
                 if (p.getWidth() == 4) {
-                    lw("t1", p.getAddrValue() + "(sp)");
-                    sw("t1", offset + "(sp)");
+                    LW("t1", p.getAddrValue(), "sp");
+                    SW("t1", offset, "sp");
                 } else {
-                    lb("t1", p.getAddrValue() + "(sp)");
-                    sb("t1", offset + "(sp)");
+                    LB("t1", p.getAddrValue(), "sp");
+                    SB("t1", offset, "sp");
                 }
             }
             i++;
@@ -54,9 +54,9 @@ public class CallInstruction extends IRInstruction {
         call(callee.getFuncName());
         if (has_return_value) {
             if (width == 4)
-                sw("a0", lhs.getAddrValue() + "(sp)");
+                SW("a0", lhs.getAddrValue(), "sp");
             else
-                sb("a0", lhs.getAddrValue() + "(sp)");
+                SB("a0", lhs.getAddrValue(), "sp");
         }
     }
 

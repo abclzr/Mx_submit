@@ -18,19 +18,19 @@ public class StoreInstruction extends IRInstruction {
 
     @Override
     public void codegen() {
-        lw("t1", addr.getAddrValue() + "(sp)");
+        LW("t1", addr.getAddrValue(), "sp");
         if (width == 4) {
             if(value != null) {
-                lw("t2", value.getAddrValue() + "(sp)");
-                sw("t2", offset + "(t1)");
+                LW("t2", value.getAddrValue(), "sp");
+                SW("t2", offset, "t1");
             } else
-                sw("x0", offset + "(t1)");
+                SW("x0", offset, "t1");
         } else {
             if (value != null) {
-                lb("t2", value.getAddrValue() + "(sp)");
-                sb("t2", offset + "(t1)");
+                LB("t2", value.getAddrValue(), "sp");
+                SB("t2", offset, "t1");
             } else
-                sb("x0", offset + "(t1)");
+                SB("x0", offset, "t1");
         }
     }
 

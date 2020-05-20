@@ -16,8 +16,8 @@ public class BranchInstruction extends IRInstruction {
 
     @Override
     public void codegen() {
-        lw("t1", r1.getAddrValue() + "(sp)");
-        lw("t2", r2.getAddrValue() + "(sp)");
+        LW("t1", r1.getAddrValue(), "sp");
+        LW("t2", r2.getAddrValue(), "sp");
         switch (bop) {
             case "<":
                 bgt("t2", "t1", toBB.getName());

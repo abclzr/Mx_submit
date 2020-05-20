@@ -18,13 +18,13 @@ public class LoadInstruction extends IRInstruction {
 
     @Override
     public void codegen() {
-        lw("t1", rhs.getAddrValue() + "(sp)");
+        LW("t1", rhs.getAddrValue(), "sp");
         if (width == 4) {
-            lw("t2", offset + "(t1)");
-            sw("t2", lhs.getAddrValue() + "(sp)");
+            LW("t2", offset, "t1");
+            SW("t2", lhs.getAddrValue(), "sp");
         } else {
-            lb("t2", offset + "(t1)");
-            sb("t2", lhs.getAddrValue() + "(sp)");
+            LB("t2", offset, "t1");
+            SB("t2", lhs.getAddrValue(), "sp");
         }
     }
 
