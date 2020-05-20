@@ -77,6 +77,7 @@ public class ClassAndFuncVisitor extends ASTVisitor {
         List<ParameterNode> list = node.getParameterList();
         FunctionSymbol newFunc = new FunctionSymbol(ReturnType, node.getIdentifier(), node, globalScope, list);
         globalScope.addFunction(newFunc);
+        node.setFunctionSymbol(newFunc);
     }
 
     @Override

@@ -2,12 +2,12 @@
 import AST.ASTNode;
 import AST.ASTBuilder;
 import AST.ProgramNode;
+import Frontend.IRBuilder;
 import Parser.MxErrorListener;
 import Parser.MxParser;
 import Parser.MxLexer;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+
+import java.io.*;
 
 import Semantic.ClassAndFuncVisitor;
 import Semantic.ClassMemberVisitor;
@@ -21,6 +21,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.BailErrorStrategy;
 
 import static java.lang.System.exit;
+import static java.lang.System.out;
 
 public class Main {
     public static ASTNode BuildAST(InputStream in) throws Exception {
@@ -46,6 +47,16 @@ public class Main {
             new ClassAndFuncVisitor(globalScope).visit((ProgramNode) root);
             new ClassMemberVisitor(globalScope).visit((ProgramNode) root);
             new SemanticCheckVisitor(globalScope).visit((ProgramNode) root);
+
+            //PrintStream ps = new PrintStream(new FileOutputStream("test.ir"));
+            //System.setOut(ps);
+            IRBuilder irBuilder = new IRBuilder(globalScope);
+            irBuilder.visit((ProgramNode) root);
+            //irBuilder.printall();
+
+            PrintStream ps = new PrintStream(new FileOutputStream("test.s"));
+            System.setOut(ps);
+            irBuilder.codegen();
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println(e.getMessage());

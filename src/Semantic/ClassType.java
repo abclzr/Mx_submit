@@ -1,12 +1,24 @@
 package Semantic;
 
 import AST.ASTNode;
+import AST.ClassDeclNode;
+import Frontend.CodeSegment;
 import Utils.Position;
 import Utils.SemanticError;
 
 public class ClassType extends Type {
     private Scope scope;
     private ASTNode define;
+    private int allocWidth;
+    private CodeSegment creator;
+
+    public void setCreator(CodeSegment cr) {
+        this.creator = cr;
+    }
+
+    public CodeSegment getCreator() {
+        return this.creator;
+    }
 
     public ClassType(String name, Scope fatherScope, ASTNode def) {
         super(name);
@@ -20,6 +32,21 @@ public class ClassType extends Type {
 
     public ASTNode getDefine() {
         return define;
+    }
+
+    @Override
+    public int getAllocWidth() {
+        return allocWidth;
+    }
+
+    @Override
+    public void setWidth() {
+        super.width = 4;
+        this.allocWidth = 0;
+        ((ClassDeclNode) define).getVarDeclNodeList().forEach(x -> {
+            Type type = Type.getType(x.getType());
+            this.allocWidth += type.getWidth();
+        });
     }
 
     @Override

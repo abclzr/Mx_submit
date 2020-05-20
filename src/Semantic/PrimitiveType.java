@@ -2,9 +2,25 @@ package Semantic;
 
 import Utils.Position;
 import Utils.SemanticError;
+import Utils.SyntaxError;
 
 public class PrimitiveType extends Type {
     private Scope scope;
+
+    @Override
+    public void setWidth() {
+        if (isStringType()) super.width = 4;
+        else if (super.getTypeName().equals("bool")) super.width = 1;
+        else if (super.getTypeName().equals("int")) super.width = 4;
+        else if (super.getTypeName().equals("void")) super.width = 0;
+        else if (super.getTypeName().equals("null")) super.width = 4;
+        else throw new SyntaxError("Primitive type not found!", null);
+    }
+
+    @Override
+    public int getAllocWidth() {
+        return super.width;
+    }
 
     public PrimitiveType(String str) {
         super(str);

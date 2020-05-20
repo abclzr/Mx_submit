@@ -193,7 +193,13 @@ public class Scope {
     }
 
     public VariableSymbol findVar(String var, Position pos) {
-        if (varMap.containsKey(var)) return varMap.get(var);
+        if (varMap.containsKey(var)) {
+            VariableSymbol v = varMap.get(var);
+            if(v.getDefine().getPosition().getRow() < pos.getRow() ||
+                    (v.getDefine().getPosition().getRow() == pos.getRow()
+                    && v.getDefine().getPosition().getCol() < pos.getCol()))
+                return v;
+        }
         if (fatherScope != null) return fatherScope.findVar(var, pos);
         else throw new SemanticError(var + " not defined!", pos);
     }
@@ -224,5 +230,9 @@ public class Scope {
 
     public Scope getFatherScope() {
         return fatherScope;
+    }
+
+    public Map<String, Type> getTypeMap() {
+        return typeMap;
     }
 }

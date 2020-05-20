@@ -1,5 +1,6 @@
 package AST;
 
+import Semantic.FunctionSymbol;
 import Utils.Position;
 
 import java.util.List;
@@ -13,6 +14,7 @@ public class FuncDeclNode extends ASTNode {
     private String identifier;
     private List<ParameterNode> parameterList;
     private BlockNode block;
+    private FunctionSymbol functionSymbol;
 
     FuncDeclNode(Position pos, TypeOrVoidNode tp, String id, List<ParameterNode> li, BlockNode bl) {
         super(pos);
@@ -20,6 +22,14 @@ public class FuncDeclNode extends ASTNode {
         this.identifier= id;
         this.parameterList = li;
         this.block = bl;
+    }
+
+    public void setFunctionSymbol(FunctionSymbol functionSymbol) {
+        this.functionSymbol = functionSymbol;
+    }
+
+    public FunctionSymbol getFunctionSymbol() {
+        return functionSymbol;
     }
 
     public TypeOrVoidNode getTypeOrVoid() {

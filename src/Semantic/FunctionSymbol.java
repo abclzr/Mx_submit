@@ -1,7 +1,7 @@
 package Semantic;
 
-import AST.ASTNode;
-import AST.ParameterNode;
+import AST.*;
+import Frontend.CodeSegment;
 import Utils.Position;
 
 import java.util.ArrayList;
@@ -10,6 +10,16 @@ import java.util.List;
 public class FunctionSymbol extends Symbol {
     private Scope scope;
     private List<Type> list;
+    private CodeSegment codeSegment;
+    private BlockNode blockContext;
+
+    public void setCodeSegment(CodeSegment codeSegment) {
+        this.codeSegment = codeSegment;
+    }
+
+    public CodeSegment getCodeSegment() {
+        return codeSegment;
+    }
 
     public FunctionSymbol(Type tp, String na, ASTNode def, Position pos, Scope fatherScope, List<Type> li) {
         super(tp, na, def, pos);
@@ -29,6 +39,15 @@ public class FunctionSymbol extends Symbol {
                 this.scope.addVariable(new VariableSymbol(xType, x.getIdentifier(), x, x.getPosition()));
             }
         }
+        if (def instanceof FuncDeclNode) {
+            blockContext = ((FuncDeclNode) def).getBlock();
+        } else if (def instanceof MethodDeclNode) {
+            blockContext = ((MethodDeclNode) def).getBlock();
+        }
+    }
+
+    public BlockNode getBlockContext() {
+        return blockContext;
     }
 
     public List<Type> getParameters() {

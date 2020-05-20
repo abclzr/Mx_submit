@@ -34,6 +34,23 @@ public class ArrayType extends Type {
         dimension++;
     }
 
+    public Type getDimensionMinusOne() {
+        if (dimension > 1)
+            return new ArrayType(super.getTypeName(), this.type, this.dimension - 1);
+        else
+            return this.type;
+    }
+
+    @Override
+    public int getAllocWidth() {
+        return super.width;
+    }
+
+    @Override
+    public void setWidth() {
+        super.width = 4;
+    }
+
     @Override
     public boolean isArrayType() {
         return true;

@@ -379,8 +379,7 @@ public class ASTBuilder extends MxBaseVisitor<ASTNode> {
         if (ctx.StringLiteral() != null)
             return new LiteralNode(new Position(ctx.getStart()),
                     LiteralNode.literalType.STRING,
-                    ctx.StringLiteral().getText(),
-                    0);
+                    ctx.StringLiteral().getText(), 0);
         if (ctx.BooleanLiteral() != null)
             return new LiteralNode(new Position(ctx.getStart()),
                     LiteralNode.literalType.BOOL,

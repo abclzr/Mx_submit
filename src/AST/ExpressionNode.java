@@ -1,5 +1,7 @@
 package AST;
 
+import Frontend.CodeSegment;
+import Frontend.VirtualRegister;
 import Semantic.FunctionSymbol;
 import Semantic.Scope;
 import Semantic.Type;
@@ -52,6 +54,24 @@ public class ExpressionNode extends ASTNode {
     private boolean isConstInt;
     private int constInt;
     private Semantic.FunctionSymbol funcSymbol;//only used for isFunction == true
+    private VirtualRegister virtualRegister;
+    private CodeSegment funcPointer;
+
+    public void setFuncPointer(CodeSegment funcPointer) {
+        this.funcPointer = funcPointer;
+    }
+
+    public CodeSegment getFuncPointer() {
+        return funcPointer;
+    }
+
+    public void setVirtualRegister(VirtualRegister virtualRegister) {
+        this.virtualRegister = virtualRegister;
+    }
+
+    public VirtualRegister getVirtualRegister() {
+        return virtualRegister;
+    }
 
     public void setIsConstInt(boolean i) {
         isConstInt = i;
