@@ -25,6 +25,8 @@ public class RegisterAllocator {
     }
 
     String askForReg(VirtualRegister r, int id, boolean load) {
+        if (!load)
+            r.setDirty(true);
         if (r.getOccupyReg() == null) {
             if (unused.isEmpty())
                 flush_one(id);
@@ -68,10 +70,13 @@ public class RegisterAllocator {
     void flush_one(int id) {
         assert head.getNextReg() != null;
         VirtualRegister q = head.getNextReg();
-        if (q.getWidth() == 4)
-            IRInstruction.SW(q.getOccupyReg(), q.getAddrValue(), "sp");
-        else
-            IRInstruction.SB(q.getOccupyReg(), q.getAddrValue(), "sp");
+        if (q.isDirty() && !(q.getRead_times() == 1 && q.getWrite_times() == 1 && q.getLast_read().getId() < id)) {
+            if (q.getWidth() == 4)
+                IRInstruction.SW(q.getOccupyReg(), q.getAddrValue(), "sp");
+            else
+                IRInstruction.SB(q.getOccupyReg(), q.getAddrValue(), "sp");
+        }
+        q.setDirty(false);
         head.setNextReg(q.getNextReg());
         q.setNextReg(null);
         unused.add(q.getOccupyReg());

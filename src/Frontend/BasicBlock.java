@@ -118,12 +118,14 @@ public class BasicBlock {
     public void codegen(RegisterAllocator regManager) {
         System.out.println(getName() + ":");
         IRInstruction x = headIRInst.getPostInst();
+        int id = 0;
         while (x != null) {
             x.codegen(regManager);
             System.out.println("#" + x.getId() + ": " + x.getMessage());
+            id = x.getId();
             x = x.getPostInst();
         }
-        regManager.flush_all(0);
+        regManager.flush_all(id + 1);
     }
 
     public void optimize() {

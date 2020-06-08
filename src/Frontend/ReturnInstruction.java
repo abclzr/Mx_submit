@@ -20,7 +20,8 @@ public class ReturnInstruction extends IRInstruction {
         if (returnValue != null) {
             String rv = regManager.askForReg(returnValue, getId(), true);
             mv("a0", rv);
-        }
+        } else
+            mv("a0", "x0");
         regManager.flush_all(getId());
         if (enclosureSegment.getRaPointer() != null)
             LW("ra", enclosureSegment.getRaPointer().getAddrValue(), "sp");

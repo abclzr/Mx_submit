@@ -18,6 +18,15 @@ public class VirtualRegister {
     private IRInstruction last_write;
     private String occupyReg;
     private VirtualRegister nextReg;
+    boolean dirty;
+
+    public void setDirty(boolean dirty) {
+        this.dirty = dirty;
+    }
+
+    public boolean isDirty() {
+        return dirty;
+    }
 
     public void setNextReg(VirtualRegister nextReg) {
         this.nextReg = nextReg;
@@ -91,6 +100,7 @@ public class VirtualRegister {
         this.last_write = null;
         this.occupyReg = null;
         this.nextReg = null;
+        this.dirty = false;
     }
 
     public int getRelativeAddress() {
