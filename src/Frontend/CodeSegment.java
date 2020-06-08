@@ -2,6 +2,7 @@ package Frontend;
 
 import Semantic.ClassType;
 import Semantic.FunctionSymbol;
+import Semantic.Scope;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,10 @@ public class CodeSegment {
     private VirtualRegister constructorReturnValue;
     private String funcName;
     private List<VirtualRegister> params;
+    public int tmp;
+    public List<String> calleeRegList;
+    public List<VirtualRegister> calleeVirtualList;
+    private RegisterAllocator regManager;
 
     public List<VirtualRegister> getParams() {
         return params;
@@ -73,6 +78,14 @@ public class CodeSegment {
         this.tailBlock = this.headBlock;
         if (inFunc != null) this.funcName = inFunc.getName();
         params = new ArrayList<>();
+        calleeRegList = new ArrayList<>();
+        calleeVirtualList = new ArrayList<>();
+        for (int i = 0; i <= 11; ++i) {
+            calleeRegList.add("s" + i);
+            calleeVirtualList.add(new VirtualRegister(this, Scope.intType));
+        }
+        regManager = new RegisterAllocator();
+        regManager.init(calleeRegList);
     }
 
     public FunctionSymbol getFunctionSymbol() {
@@ -125,11 +138,16 @@ public class CodeSegment {
             i++;
             if (i > 7) break;
         }
+        i = 0;
+        for (VirtualRegister v : calleeVirtualList) {
+            String r = calleeRegList.get(i++);
+            IRInstruction.SW(r, v.getAddrValue(), "sp");
+        }
         if (getRaPointer() != null)
             IRInstruction.sw("ra", getRaPointer().getAddrValue() + "(sp)");
         BasicBlock cs = headBlock;
         while (cs != null) {
-            cs.codegen();
+            cs.codegen(regManager);
             cs = cs.getPos();
         }
         System.out.println("\t\t\t\t\t\t # -- End function\n");
@@ -141,5 +159,14 @@ public class CodeSegment {
 
     public VirtualRegister getConstructorReturnValue() {
         return constructorReturnValue;
+    }
+
+    public void optimize() {
+        BasicBlock cs = headBlock;
+        tmp = 0;
+        while (cs != null) {
+            cs.optimize();
+            cs = cs.getPos();
+        }
     }
 }

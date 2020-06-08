@@ -36,7 +36,7 @@ public class Main {
         return a.visit(root);
     }
 //clang-9 --target=riscv32 -march=rv32ima test.s -c
-
+//export PATH="/usr/local/opt/bin:$PATH"
     public static void main(String... args) throws Exception {
         try {
             InputStream in = new FileInputStream("test.txt");
@@ -49,13 +49,19 @@ public class Main {
             new ClassMemberVisitor(globalScope).visit((ProgramNode) root);
             new SemanticCheckVisitor(globalScope).visit((ProgramNode) root);
 
-            //PrintStream ps = new PrintStream(new FileOutputStream("test.ir"));
+            PrintStream ps;
+
+            //ps = new PrintStream(new FileOutputStream("test.ir"));
             //System.setOut(ps);
             IRBuilder irBuilder = new IRBuilder(globalScope);
             irBuilder.visit((ProgramNode) root);
             //irBuilder.printall();
 
-            PrintStream ps = new PrintStream(new FileOutputStream("output.s"));
+            //ps = new PrintStream(new FileOutputStream("test.iro"));
+            //System.setOut(ps);
+            irBuilder.optimize();
+            //irBuilder.printall();
+            ps = new PrintStream(new FileOutputStream("output.s"));
             System.setOut(ps);
             irBuilder.codegen();
         } catch (Exception e) {

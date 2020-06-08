@@ -30,338 +30,368 @@ public class BinaryInstruction extends IRInstruction {
     }
 
     @Override
-    public void codegen() {
+    public void replace_lhs_with(VirtualRegister a, VirtualRegister b) {
+        if (lhs == a)
+            lhs = b;
+        else
+            assert false;
+    }
+
+    @Override
+    public void codegen(RegisterAllocator regManager) {
         if (rhs1 != null) {
             if (is_imm) {
+                String t1 = regManager.askForReg(rhs1, getId(), true);
+                /*
                 if (rhs1.getWidth() == 4) {
-                    LW("t1", rhs1.getAddrValue(), "sp");
+                    LW(t1, rhs1.getAddrValue(), "sp");
                 } else {
-                    LB("t1", rhs1.getAddrValue(), "sp");
-                }
+                    LB(t1, rhs1.getAddrValue(), "sp");
+                }*/
+                String t3 = regManager.askForReg(lhs, getId(), false);
                 switch (bop) {
                     case "+":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
-                            addi("t3", "t1", String.valueOf(imm_rhs2));
+                            addi(t3, t1, String.valueOf(imm_rhs2));
                         else {
-                            li("t2", imm_rhs2);
-                            add("t3", "t1", "t2");
+                            li("t5", imm_rhs2);
+                            add(t3, t1, "t5");
                         }
                         break;
                     case "<=":
-                        li("t2", imm_rhs2);
-                        slt("t3", "t2", "t1");
-                        xori("t3", "t3", "1");
+                        li("t5", imm_rhs2);
+                        slt(t3, "t5", t1);
+                        xori(t3, t3, "1");
                         break;
                     case ">=":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047) {
-                            slti("t3", "t1", String.valueOf(imm_rhs2));
-                            xori("t3", "t3", "1");
+                            slti(t3, t1, String.valueOf(imm_rhs2));
+                            xori(t3, t3, "1");
                         } else {
-                            li("t2", imm_rhs2);
-                            slt("t3", "t1", "t2");
-                            xori("t3", "t3", "1");
+                            li("t5", imm_rhs2);
+                            slt(t3, t1, "t5");
+                            xori(t3, t3, "1");
                         }
                         break;
                     case "<":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
-                            slti("t3", "t1", String.valueOf(imm_rhs2));
+                            slti(t3, t1, String.valueOf(imm_rhs2));
                         else {
-                            li("t2", imm_rhs2);
-                            slt("t3", "t1", "t2");
+                            li("t5", imm_rhs2);
+                            slt(t3, t1, "t5");
                         }
                         break;
                     case ">":
-                        li("t2", imm_rhs2);
-                        slt("t3", "t2", "t1");
+                        li("t5", imm_rhs2);
+                        slt(t3, "t5", t1);
                         break;
                     case "-":
-                        li("t2", imm_rhs2);
-                        sub("t3", "t1", "t2");
+                        li("t5", imm_rhs2);
+                        sub(t3, t1, "t5");
                         break;
                     case "*":
-                        li("t2", imm_rhs2);
-                        mul("t3", "t1", "t2");
+                        li("t5", imm_rhs2);
+                        mul(t3, t1, "t5");
                         break;
                     case "/":
-                        li("t2", imm_rhs2);
-                        div("t3", "t1", "t2");
+                        li("t5", imm_rhs2);
+                        div(t3, t1, "t5");
                         break;
                     case "%":
-                        li("t2", imm_rhs2);
-                        rem("t3", "t1", "t2");
+                        li("t5", imm_rhs2);
+                        rem(t3, t1, "t5");
                         break;
                     case "<<":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
-                            slli("t3", "t1", String.valueOf(imm_rhs2));
+                            slli(t3, t1, String.valueOf(imm_rhs2));
                         else {
-                            li("t2", imm_rhs2);
-                            sll("t3", "t1", "t2");
+                            li("t5", imm_rhs2);
+                            sll(t3, t1, "t5");
                         }
                         break;
                     case ">>":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
-                            srai("t3", "t1", String.valueOf(imm_rhs2));
+                            srai(t3, t1, String.valueOf(imm_rhs2));
                         else {
-                            li("t2", imm_rhs2);
-                            sra("t3", "t1", "t2");
+                            li("t5", imm_rhs2);
+                            sra(t3, t1, "t5");
                         }
                         break;
                     case "&":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
-                            andi("t3", "t1", String.valueOf(imm_rhs2));
+                            andi(t3, t1, String.valueOf(imm_rhs2));
                         else {
-                            li("t2", imm_rhs2);
-                            and("t3", "t1", "t2");
+                            li("t5", imm_rhs2);
+                            and(t3, t1, "t5");
                         }
                         break;
                     case "^":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
-                            xori("t3", "t1", String.valueOf(imm_rhs2));
+                            xori(t3, t1, String.valueOf(imm_rhs2));
                         else {
-                            li("t2", imm_rhs2);
-                            xor("t3", "t1", "t2");
+                            li("t5", imm_rhs2);
+                            xor(t3, t1, "t5");
                         }
                         break;
                     case "|":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
-                            ori("t3", "t1", String.valueOf(imm_rhs2));
+                            ori(t3, t1, String.valueOf(imm_rhs2));
                         else {
-                            li("t2", imm_rhs2);
-                            or("t3", "t1", "t2");
+                            li("t5", imm_rhs2);
+                            or(t3, t1, "t5");
                         }
                         break;
                     case "==":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
-                            xori("t3", "t1", String.valueOf(imm_rhs2));
+                            xori(t3, t1, String.valueOf(imm_rhs2));
                         else {
-                            li("t2", imm_rhs2);
-                            xor("t3", "t1", "t2");
+                            li("t5", imm_rhs2);
+                            xor(t3, t1, "t5");
                         }
-                        seqz("t3", "t3");
+                        seqz(t3, t3);
                         break;
                     case "!=":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
-                            xori("t3", "t1", String.valueOf(imm_rhs2));
+                            xori(t3, t1, String.valueOf(imm_rhs2));
                         else {
-                            li("t2", imm_rhs2);
-                            xor("t3", "t1", "t2");
+                            li("t5", imm_rhs2);
+                            xor(t3, t1, "t5");
                         }
-                        snez("t3", "t3");
+                        snez(t3, t3);
                         break;
                 }
+                /*
                 if (width == 4) {
-                    SW("t3", lhs.getAddrValue(), "sp");
+                    SW(t3, lhs.getAddrValue(), "sp");
                 } else {
-                    SB("t3", lhs.getAddrValue(), "sp");
-                }
+                    SB(t3, lhs.getAddrValue(), "sp");
+                }*/
             } else {
+                String t1 = regManager.askForReg(rhs1, getId(), true);
+                String t2 = regManager.askForReg(rhs2, getId(), true);
+                String t3 = regManager.askForReg(lhs, getId(), false);
+                /*
                 if (rhs1.getWidth() == 4) {
-                    LW("t1", rhs1.getAddrValue(), "sp");
-                    LW("t2", rhs2.getAddrValue(), "sp");
+                    LW(t1, rhs1.getAddrValue(), "sp");
+                    LW(t2, rhs2.getAddrValue(), "sp");
                 } else {
-                    LB("t1", rhs1.getAddrValue(), "sp");
-                    LB("t2", rhs2.getAddrValue(), "sp");
-                }
+                    LB(t1, rhs1.getAddrValue(), "sp");
+                    LB(t2, rhs2.getAddrValue(), "sp");
+                }*/
                 switch (bop) {
                     case "+":
-                        add("t3", "t1", "t2");
+                        add(t3, t1, t2);
                         break;
                     case "<=":
-                        slt("t3", "t2", "t1");
-                        xori("t3", "t3", "1");
+                        slt(t3, t2, t1);
+                        xori(t3, t3, "1");
                         break;
                     case ">=":
-                        slt("t3", "t1", "t2");
-                        xori("t3", "t3", "1");
+                        slt(t3, t1, t2);
+                        xori(t3, t3, "1");
                         break;
                     case "<":
-                        slt("t3", "t1", "t2");
+                        slt(t3, t1, t2);
                         break;
                     case ">":
-                        slt("t3", "t2", "t1");
+                        slt(t3, t2, t1);
                         break;
                     case "-":
-                        sub("t3", "t1", "t2");
+                        sub(t3, t1, t2);
                         break;
                     case "*":
-                        mul("t3", "t1", "t2");
+                        mul(t3, t1, t2);
                         break;
                     case "/":
-                        div("t3", "t1", "t2");
+                        div(t3, t1, t2);
                         break;
                     case "%":
-                        rem("t3", "t1", "t2");
+                        rem(t3, t1, t2);
                         break;
                     case "<<":
-                        sll("t3", "t1", "t2");
+                        sll(t3, t1, t2);
                         break;
                     case ">>":
-                        sra("t3", "t1", "t2");
+                        sra(t3, t1, t2);
                         break;
                     case "&":
-                        and("t3", "t1", "t2");
+                        and(t3, t1, t2);
                         break;
                     case "^":
-                        xor("t3", "t1", "t2");
+                        xor(t3, t1, t2);
                         break;
                     case "|":
-                        or("t3", "t1", "t2");
+                        or(t3, t1, t2);
                         break;
                     case "==":
-                        xor("t3", "t1", "t2");
-                        seqz("t3", "t3");
+                        xor(t3, t1, t2);
+                        seqz(t3, t3);
                         break;
                     case "!=":
-                        xor("t3", "t1", "t2");
-                        snez("t3", "t3");
+                        xor(t3, t1, t2);
+                        snez(t3, t3);
                         break;
                 }
+                /*
                 if (width == 4) {
-                    SW("t3", lhs.getAddrValue(), "sp");
+                    SW(t3, lhs.getAddrValue(), "sp");
                 } else {
-                    SB("t3", lhs.getAddrValue(), "sp");
-                }
+                    SB(t3, lhs.getAddrValue(), "sp");
+                }*/
             }
         } else {
             if (is_imm) {
+                String t3 = regManager.askForReg(lhs, getId(), false);
                 switch (bop) {
                     case "+":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
-                            addi("t3", "x0", String.valueOf(imm_rhs2));
+                            addi(t3, "x0", String.valueOf(imm_rhs2));
                         else {
-                            li("t2", imm_rhs2);
-                            add("t3", "x0", "t2");
+                            li("t5", imm_rhs2);
+                            add(t3, "x0", "t5");
                         }
                         break;
                     case "<=":
-                        li("t2", imm_rhs2);
-                        slt("t3", "t2", "x0");
-                        xori("t3", "t3", "1");
+                        li("t5", imm_rhs2);
+                        slt(t3, "t5", "x0");
+                        xori(t3, t3, "1");
                         break;
                     case ">=":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
-                            slti("t3", "x0", String.valueOf(imm_rhs2));
+                            slti(t3, "x0", String.valueOf(imm_rhs2));
                         else {
-                            li("t2", imm_rhs2);
-                            slt("t3", "x0", "t2");
+                            li("t5", imm_rhs2);
+                            slt(t3, "x0", "t5");
                         }
-                        xori("t3", "t3", "1");
+                        xori(t3, t3, "1");
                         break;
                     case "<":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
-                            slti("t3", "x0", String.valueOf(imm_rhs2));
+                            slti(t3, "x0", String.valueOf(imm_rhs2));
                         else {
-                            li("t2", imm_rhs2);
-                            slt("t3", "x0", "t2");
+                            li("t5", imm_rhs2);
+                            slt(t3, "x0", "t5");
                         }
                         break;
                     case ">":
-                        li("t2", imm_rhs2);
-                        slt("t3", "t2", "x0");
+                        li("t5", imm_rhs2);
+                        slt(t3, "t5", "x0");
                         break;
                     case "-":
-                        li("t2", imm_rhs2);
-                        sub("t3", "x0", "t2");
+                        li("t5", imm_rhs2);
+                        sub(t3, "x0", "t5");
                         break;
                     case "*":
                     case "&":
                     case "<<":
                     case ">>":
-                        mv("t3", "x0");
+                        mv(t3, "x0");
                         break;
                     case "/":
-                        li("t2", imm_rhs2);
-                        div("t3", "x0", "t2");
+                        li("t5", imm_rhs2);
+                        div(t3, "x0", "t5");
                         break;
                     case "%":
-                        li("t2", imm_rhs2);
-                        rem("t3", "x0", "t2");
+                        li("t5", imm_rhs2);
+                        rem(t3, "x0", "t5");
                         break;
                     case "^":
                     case "|":
-                        li("t3", imm_rhs2);
+                        li(t3, imm_rhs2);
                         break;
                     case "==":
-                        li("t2", imm_rhs2);
-                        seqz("t3", "t2");
+                        li("t5", imm_rhs2);
+                        seqz(t3, "t5");
                         break;
                     case "!=":
-                        li("t2", imm_rhs2);
-                        snez("t3", "t2");
+                        li("t5", imm_rhs2);
+                        snez(t3, "t5");
                         break;
                 }
+                /*
                 if (width == 4) {
-                    SW("t3", lhs.getAddrValue(), "sp");
+                    SW(t3, lhs.getAddrValue(), "sp");
                 } else {
-                    SB("t3", lhs.getAddrValue(), "sp");
-                }
+                    SB(t3, lhs.getAddrValue(), "sp");
+                }*/
             } else {
+                String t2 = regManager.askForReg(rhs2, getId(), true);
+                String t3 = regManager.askForReg(lhs, getId(), true);
+                /*
                 if (rhs2.getWidth() == 4) {
-                    LW("t2", rhs2.getAddrValue(), "sp");
+                    LW(t2, rhs2.getAddrValue(), "sp");
                 } else {
-                    LB("t2", rhs2.getAddrValue(), "sp");
-                }
+                    LB(t2, rhs2.getAddrValue(), "sp");
+                }*/
                 switch (bop) {
                     case "+":
-                        add("t3", "x0", "t2");
+                        add(t3, "x0", t2);
                         break;
                     case "<=":
-                        slt("t3", "t2", "x0");
-                        xori("t3", "t3", "1");
+                        slt(t3, t2, "x0");
+                        xori(t3, t3, "1");
                         break;
                     case ">=":
-                        slt("t3", "x0", "t2");
-                        xori("t3", "t3", "1");
+                        slt(t3, "x0", t2);
+                        xori(t3, t3, "1");
                         break;
                     case "<":
-                        slt("t3", "x0", "t2");
+                        slt(t3, "x0", t2);
                         break;
                     case ">":
-                        slt("t3", "t2", "x0");
+                        slt(t3, t2, "x0");
                         break;
                     case "-":
-                        sub("t3", "x0", "t2");
+                        sub(t3, "x0", t2);
                         break;
                     case "*":
-                        mul("t3", "x0", "t2");
+                        mul(t3, "x0", t2);
                         break;
                     case "/":
-                        div("t3", "x0", "t2");
+                        div(t3, "x0", t2);
                         break;
                     case "%":
-                        rem("t3", "x0", "t2");
+                        rem(t3, "x0", t2);
                         break;
                     case "<<":
-                        sll("t3", "x0", "t2");
+                        sll(t3, "x0", t2);
                         break;
                     case ">>":
-                        sra("t3", "x0", "t2");
+                        sra(t3, "x0", t2);
                         break;
                     case "&":
-                        and("t3", "x0", "t2");
+                        and(t3, "x0", t2);
                         break;
                     case "^":
-                        xor("t3", "x0", "t2");
+                        xor(t3, "x0", t2);
                         break;
                     case "|":
-                        or("t3", "x0", "t2");
+                        or(t3, "x0", t2);
                         break;
                     case "==":
-                        xor("t3", "x0", "t2");
-                        seqz("t3", "t3");
+                        xor(t3, "x0", t2);
+                        seqz(t3, t3);
                         break;
                     case "!=":
-                        xor("t3", "x0", "t2");
-                        snez("t3", "t3");
+                        xor(t3, "x0", t2);
+                        snez(t3, t3);
                         break;
                 }
+                /*
                 if (width == 4) {
-                    SW("t3", lhs.getAddrValue(), "sp");
+                    SW(t3, lhs.getAddrValue(), "sp");
                 } else {
-                    SB("t3", lhs.getAddrValue(), "sp");
-                }
+                    SB(t3, lhs.getAddrValue(), "sp");
+                }*/
             }
         }
+    }
+
+    @Override
+    public void optimize() {
+        if (rhs1 != null) rhs1.read_ex(this);
+        if (!is_imm) rhs2.read_ex(this);
+        lhs.write_ex(this);
     }
 
     @Override

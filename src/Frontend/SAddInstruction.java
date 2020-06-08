@@ -24,9 +24,24 @@ public class SAddInstruction extends IRInstruction {
     }
 
     @Override
-    public void codegen() {
-        ADDI("t1", "sp", offset.getAddr());
-        SW("t1", lhs.getAddrValue(), "sp");
+    public void replace_lhs_with(VirtualRegister a, VirtualRegister b) {
+        if (lhs == a)
+            lhs = b;
+        else
+            assert false;
+    }
+
+    @Override
+    public void codegen(RegisterAllocator regManager) {
+        String t1 = regManager.askForReg(lhs, getId(), false);
+        ADDI(t1, "sp", offset.getAddr());
+//        ADDI("t1", "sp", offset.getAddr());
+//        SW("t1", lhs.getAddrValue(), "sp");
+    }
+
+    @Override
+    public void optimize() {
+        lhs.write_ex(this);
     }
 
     @Override

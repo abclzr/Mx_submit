@@ -11,18 +11,32 @@ public class ReturnInstruction extends IRInstruction {
     }
 
     @Override
-    public void codegen() {
+    public void replace_lhs_with(VirtualRegister a, VirtualRegister b) {
+        assert false;
+    }
+
+    @Override
+    public void codegen(RegisterAllocator regManager) {
+        if (returnValue != null) {
+            String rv = regManager.askForReg(returnValue, getId(), true);
+            mv("a0", rv);
+        }
+        regManager.flush_all(getId());
         if (enclosureSegment.getRaPointer() != null)
             LW("ra", enclosureSegment.getRaPointer().getAddrValue(), "sp");
-        if (returnValue != null)
-            if (returnValue.getWidth() == 4)
-                LW("a0", returnValue.getAddrValue(), "sp");
-            else
-                LB("a0", returnValue.getAddrValue(), "sp");
-        else
-            mv("a0", "x0");
+        int i = 0;
+        for (VirtualRegister v : enclosureSegment.calleeVirtualList) {
+            String r = enclosureSegment.calleeRegList.get(i++);
+            IRInstruction.LW(r, v.getAddrValue(), "sp");
+        }
         ADDI("sp", "sp", enclosureSegment.getStackStorage());
         ret();
+    }
+
+    @Override
+    public void optimize() {
+        if (returnValue != null)
+            returnValue.read_ex(this);
     }
 
     @Override

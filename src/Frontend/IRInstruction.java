@@ -2,12 +2,45 @@ package Frontend;
 
 public abstract class IRInstruction {
     public op IRop;
+    private IRInstruction preInst;
+    private IRInstruction postInst;
+    private int id;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setPreInst(IRInstruction p) {
+        this.preInst = p;
+    }
+
+    public IRInstruction getPreInst() {
+        return this.preInst;
+    }
+
+    public void setPostInst(IRInstruction p) {
+        this.postInst = p;
+    }
+
+    public IRInstruction getPostInst() {
+        return this.postInst;
+    }
 
     IRInstruction(op o) {
         this.IRop = o;
+        this.preInst = null;
+        this.postInst = null;
     }
 
-    public abstract void codegen();
+    public abstract void replace_lhs_with(VirtualRegister a, VirtualRegister b);
+
+    public abstract void codegen(RegisterAllocator regManager);
+
+    public abstract void optimize();
 
     public enum op {RETURN, MALLOC, BINARY, UNARY, COPY, JUMP, CJUMP, BRANCH, PARAM, CALL, ARRAY, LOAD, STORE, SLOAD, SSTORE, GLOAD, GSTORE, SADD, GADD};
 

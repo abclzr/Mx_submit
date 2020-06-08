@@ -16,15 +16,35 @@ public class GLoadInstruction extends IRInstruction {
     }
 
     @Override
-    public void codegen() {
-        la("t1", gv);
+    public void replace_lhs_with(VirtualRegister a, VirtualRegister b) {
+        if (lhs == a)
+            lhs = b;
+        else
+            assert false;
+    }
+
+    @Override
+    public void codegen(RegisterAllocator regManager) {
+        la("t6", gv);
+        String l = regManager.askForReg(lhs, getId(), false);
         if (lhs.getWidth() == 4) {
+            lw(l, "0(t6)");
+            /*
             lw("t2", "0(t1)");
             SW("t2", lhs.getAddrValue(), "sp");
+             */
         } else {
+            lb(l, "0(t6)");
+            /*
             lb("t2", "0(t1)");
             SB("t2", lhs.getAddrValue(), "sp");
+             */
         }
+    }
+
+    @Override
+    public void optimize() {
+        lhs.write_ex(this);
     }
 
     @Override

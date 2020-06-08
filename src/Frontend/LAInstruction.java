@@ -16,9 +16,22 @@ public class LAInstruction extends IRInstruction {
     }
 
     @Override
-    public void codegen() {
-        la("t1", gv);
-        SW("t1", lhs.getAddrValue(), "sp");
+    public void replace_lhs_with(VirtualRegister a, VirtualRegister b) {
+        if (lhs == a)
+            lhs = b;
+        else
+            assert false;
+    }
+
+    @Override
+    public void codegen(RegisterAllocator regManager) {
+        String l = regManager.askForReg(lhs, getId(), false);
+        la(l, gv);
+    }
+
+    @Override
+    public void optimize() {
+        lhs.write_ex(this);
     }
 
     @Override

@@ -21,10 +21,39 @@ public class CopyInstruction extends IRInstruction {
         this.tp = type.val_to_reg;
     }
 
+    public VirtualRegister getLhs() {
+        return lhs;
+    }
+
+    public VirtualRegister getRhs() {
+        return rhs;
+    }
+
+    public int getRhs_int() {
+        return rhs_int;
+    }
+
+    public boolean is_imm_assign() {
+        return tp == type.val_to_reg;
+    }
+
     @Override
-    public void codegen() {
+    public void replace_lhs_with(VirtualRegister a, VirtualRegister b) {
+        if (lhs == a)
+            lhs = b;
+        else
+            assert false;
+    }
+
+    @Override
+    public void codegen(RegisterAllocator regManager) {
+        String t1, t2;
         switch (tp) {
             case reg_to_reg:
+                t2 = regManager.askForReg(rhs, getId(), true);
+                t1 = regManager.askForReg(lhs, getId(), false);
+                mv(t1, t2);
+                /*
                 if (rhs.getWidth() == 4)
                     LW("t1", rhs.getAddrValue(), "sp");
                 else
@@ -33,15 +62,27 @@ public class CopyInstruction extends IRInstruction {
                     SW("t1", lhs.getAddrValue(), "sp");
                 else
                     SB("t1", lhs.getAddrValue(), "sp");
+                 */
                 break;
             case val_to_reg:
+                t1 = regManager.askForReg(lhs, getId(), false);
+                li(t1, rhs_int);
+                /*
                 li("t1", rhs_int);
                 if (lhs.getWidth() == 4)
                     SW("t1", lhs.getAddrValue(), "sp");
                 else
                     SB("t1", lhs.getAddrValue(), "sp");
+                 */
                 break;
         }
+    }
+
+    @Override
+    public void optimize() {
+        lhs.write_ex(this);
+        if (tp == type.reg_to_reg)
+            rhs.read_ex(this);
     }
 
     @Override

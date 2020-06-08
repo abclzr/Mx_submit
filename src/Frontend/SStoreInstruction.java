@@ -16,14 +16,18 @@ public class SStoreInstruction extends IRInstruction {
     }
 
     @Override
-    public void codegen() {
+    public void replace_lhs_with(VirtualRegister a, VirtualRegister b) {
+        assert false;
+    }
+
+    @Override
+    public void codegen(RegisterAllocator regManager) {
         if (value != null) {
+            String v = regManager.askForReg(value, getId(), true);
             if (width == 4) {
-                LW("t1", value.getAddrValue(), "sp");
-                SW("t1", offset.getAddr(), "sp");
+                SW(v, offset.getAddr(), "sp");
             } else {
-                LB("t1", value.getAddrValue(), "sp");
-                SB("t1", offset.getAddr(), "sp");
+                SB(v, offset.getAddr(), "sp");
             }
         } else {
             if (width == 4) {
@@ -32,6 +36,12 @@ public class SStoreInstruction extends IRInstruction {
                 SB("x0", offset.getAddr(), "sp");
             }
         }
+    }
+
+    @Override
+    public void optimize() {
+        if (value != null)
+            value.read_ex(this);
     }
 
     @Override

@@ -201,12 +201,12 @@ public class IRBuilder extends ASTVisitor {
                 if (cs.getFunctionSymbol().getType() == null) {
                     currentSegment = cs;
                     currentBlock = cs.getTailBlock();
-                    VirtualRegister th = new VirtualRegister(currentSegment, Scope.intType);
-                    currentBlock.addInst(new MallocInstruction(IRInstruction.op.MALLOC, th, cs.getClassType().getAllocWidth()));
-                    currentBlock.addInst(new SStoreInstruction(IRInstruction.op.SSTORE, cs.getThisPointer().getAddr(), th, Scope.intType));
-                    currentSegment.setConstructorReturnValue(th);
+//                    VirtualRegister th = new VirtualRegister(currentSegment, Scope.intType);
+                    currentBlock.addInst(new MallocInstruction(IRInstruction.op.MALLOC, cs.getThisPointer(), cs.getClassType().getAllocWidth()));
+//                    currentBlock.addInst(new SStoreInstruction(IRInstruction.op.SSTORE, cs.getThisPointer().getAddr(), th, Scope.intType));
+                    currentSegment.setConstructorReturnValue(cs.getThisPointer());
                     CollectStmt(cs.getFunctionSymbol().getBlockContext().getStatementList(), null, null);
-                    currentBlock.addInst(new ReturnInstruction(IRInstruction.op.RETURN, th, currentSegment));
+                    currentBlock.addInst(new ReturnInstruction(IRInstruction.op.RETURN, cs.getThisPointer(), currentSegment));
                 } else {
                     currentSegment = cs;
                     currentBlock = cs.getTailBlock();
@@ -314,9 +314,11 @@ public class IRBuilder extends ASTVisitor {
                             if (v.getExpr() != null) {
                                 ComputExprValue(v.getExpr());
                                 VirtualRegister vv = v.getExpr().getVirtualRegister();
-                                currentBlock.addInst(new SStoreInstruction(IRInstruction.op.SSTORE, vn.getAddr(), vv, type));
+                                currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, vv));
+//                                currentBlock.addInst(new SStoreInstruction(IRInstruction.op.SSTORE, vn.getAddr(), vv, type));
                             } else
-                                currentBlock.addInst(new SStoreInstruction(IRInstruction.op.SSTORE, vn.getAddr(), null, type));
+                                currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, 0));
+//                                currentBlock.addInst(new SStoreInstruction(IRInstruction.op.SSTORE, vn.getAddr(), null, type));
                         });
                         break;
             }
@@ -366,10 +368,12 @@ public class IRBuilder extends ASTVisitor {
         if (node == null) return;
         switch (node.getType()) {
             case THIS:
+                node.setVirtualRegister(currentSegment.getThisPointer());
+                /*
                 vn = new VirtualRegister(currentSegment, Scope.intType);
                 VirtualRegister th = currentSegment.getThisPointer();
                 currentBlock.addInst(new SLoadInstruction(IRInstruction.op.SLOAD, vn, th.getAddr(), Scope.intType));
-                node.setVirtualRegister(vn);
+                node.setVirtualRegister(vn);*/
                 break;
             case LITERAL:
                 switch (node.getLiteralNode().getLiteralType()) {
@@ -405,19 +409,16 @@ public class IRBuilder extends ASTVisitor {
                     VirtualRegister varReg = var.getVirtualRegister();
                     Address offset;
                     if (varReg != null) {
-                        offset = varReg.getAddr();
-                        vn = new VirtualRegister(currentSegment, var.getType());
                         if (varReg.getInCodeSegment() == globalVarSegment) {
+                            vn = new VirtualRegister(currentSegment, var.getType());
                             currentBlock.addInst(new GLoadInstruction(IRInstruction.op.GLOAD, vn, varReg.getGlobalVarName(), var.getType()));
                             node.setVirtualRegister(vn);
                         } else {
-                            currentBlock.addInst(new SLoadInstruction(IRInstruction.op.SLOAD, vn, offset, var.getType()));
-                            node.setVirtualRegister(vn);
+                            node.setVirtualRegister(varReg);
                         }
                     } else {
                         offset = var.getAddrInClass();
-                        VirtualRegister thi = new VirtualRegister(currentSegment, Scope.intType);
-                        currentBlock.addInst(new SLoadInstruction(IRInstruction.op.SLOAD, thi, currentSegment.getThisPointer().getAddr(), Scope.intType));
+                        VirtualRegister thi = currentSegment.getThisPointer();
                         vn = new VirtualRegister(currentSegment, Scope.intType);
                         currentBlock.addInst(new LoadInstruction(IRInstruction.op.LOAD, vn, thi, offset.getAddr(), var.getType()));
                         node.setVirtualRegister(vn);
@@ -503,6 +504,20 @@ public class IRBuilder extends ASTVisitor {
                 node.setVirtualRegister(vn);
                 break;
             case POST:
+                if (node.getPostExpr().getType() == ExpressionNode.Type.IDENTIFIER) {
+                    VariableSymbol var = node.getPostExpr().getScope().findVar(node.getPostExpr().getIdentifier(), node.getPosition());
+                    VirtualRegister varReg = var.getVirtualRegister();
+                    if (varReg != null && varReg.getInCodeSegment() != globalVarSegment) {
+                        vn = new VirtualRegister(currentSegment, Scope.intType);
+                        currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, varReg));
+                        if(node.getOp().equals("++"))
+                            currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "+", 1));
+                        else
+                            currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "-", 1));
+                        node.setVirtualRegister(vn);
+                        break;
+                    }
+                }
                 ComputExprAddr(node.getPostExpr());
                 VirtualRegister addr = node.getPostExpr().getVirtualRegister();
                 vn = new VirtualRegister(currentSegment, Scope.intType);
@@ -523,6 +538,18 @@ public class IRBuilder extends ASTVisitor {
                 switch (node.getOp()) {
                     case "++":
                     case "--":
+                        if (node.getPreExpr().getType() == ExpressionNode.Type.IDENTIFIER) {
+                            VariableSymbol var = node.getPreExpr().getScope().findVar(node.getPreExpr().getIdentifier(), node.getPosition());
+                            VirtualRegister varReg = var.getVirtualRegister();
+                            if (varReg != null && varReg.getInCodeSegment() != globalVarSegment) {
+                                if(node.getOp().equals("++"))
+                                    currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "+", 1));
+                                else
+                                    currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "-", 1));
+                                node.setVirtualRegister(varReg);
+                                break;
+                            }
+                        }
                         ComputExprAddr(node.getPreExpr());
                         VirtualRegister address = node.getPreExpr().getVirtualRegister();
                         VirtualRegister num = new VirtualRegister(currentSegment, Scope.intType);
@@ -572,6 +599,17 @@ public class IRBuilder extends ASTVisitor {
                 VirtualRegister r1 = null, r2 = null;
                 if (!node.getOp().equals("&&") && !node.getOp().equals("||")) {
                     if (node.getOp().equals("=")) {
+                        if (node.getBinaryExpr1().getType() == ExpressionNode.Type.IDENTIFIER) {
+                            VariableSymbol var = node.getBinaryExpr1().getScope().findVar(node.getBinaryExpr1().getIdentifier(), node.getPosition());
+                            VirtualRegister varReg = var.getVirtualRegister();
+                            if (varReg != null && varReg.getInCodeSegment() != globalVarSegment) {
+                                ComputExprValue(node.getBinaryExpr2());
+                                r2 = node.getBinaryExpr2().getVirtualRegister();
+                                currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, varReg, r2));
+                                node.setVirtualRegister(varReg);
+                                break;
+                            }
+                        }
                         ComputExprAddr(node.getBinaryExpr1());
                         ComputExprValue(node.getBinaryExpr2());
                         r1 = node.getBinaryExpr1().getVirtualRegister();
@@ -713,8 +751,7 @@ public class IRBuilder extends ASTVisitor {
                         }
                     } else {
                         offset = var.getAddrInClass();
-                        VirtualRegister th = new VirtualRegister(currentSegment, Scope.intType);
-                        currentBlock.addInst(new SLoadInstruction(IRInstruction.op.SLOAD, th, currentSegment.getThisPointer().getAddr(), Scope.intType));
+                        VirtualRegister th = currentSegment.getThisPointer();
                         vn = new VirtualRegister(currentSegment, Scope.intType);
                         currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, vn, th, "+", offset.getAddr()));
                         node.setVirtualRegister(vn);
@@ -918,6 +955,12 @@ public class IRBuilder extends ASTVisitor {
     @Override
     public void visit(VarDecoratorNode node) {
 
+    }
+
+    public void optimize() {
+        segmentList.forEach(x -> {
+            x.optimize();
+        });
     }
 
     public void codegen() {

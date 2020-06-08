@@ -17,15 +17,33 @@ public class LoadInstruction extends IRInstruction {
     }
 
     @Override
-    public void codegen() {
-        LW("t1", rhs.getAddrValue(), "sp");
+    public void replace_lhs_with(VirtualRegister a, VirtualRegister b) {
+        if (lhs == a)
+            lhs = b;
+        else
+            assert false;
+    }
+
+    @Override
+    public void codegen(RegisterAllocator regManager) {
+        String t2 = regManager.askForReg(rhs, getId(), true);
+        String t1 = regManager.askForReg(lhs, getId(), false);
+        //LW("t1", rhs.getAddrValue(), "sp");
         if (width == 4) {
-            LW("t2", offset, "t1");
-            SW("t2", lhs.getAddrValue(), "sp");
+            lw(t1, offset + "("+t2+")");
+            //LW("t2", offset, "t1");
+            //SW("t2", lhs.getAddrValue(), "sp");
         } else {
-            LB("t2", offset, "t1");
-            SB("t2", lhs.getAddrValue(), "sp");
+            lb(t1, offset + "("+t2+")");
+            //LB("t2", offset, "t1");
+            //SB("t2", lhs.getAddrValue(), "sp");
         }
+    }
+
+    @Override
+    public void optimize() {
+        lhs.write_ex(this);
+        rhs.read_ex(this);
     }
 
     @Override

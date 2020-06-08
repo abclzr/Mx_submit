@@ -15,23 +15,39 @@ public class BranchInstruction extends IRInstruction {
     }
 
     @Override
-    public void codegen() {
+    public void replace_lhs_with(VirtualRegister a, VirtualRegister b) {
+        assert false;
+    }
+
+    @Override
+    public void codegen(RegisterAllocator regManager) {
+        String t1 =regManager.askForReg(r1, getId(), true);
+        String t2 =regManager.askForReg(r2, getId(), true);
+        /*
         LW("t1", r1.getAddrValue(), "sp");
         LW("t2", r2.getAddrValue(), "sp");
+         */
+        regManager.flush_all(getId());
         switch (bop) {
             case "<":
-                bgt("t2", "t1", toBB.getName());
+                bgt(t2, t1, toBB.getName());
                 break;
             case ">":
-                bgt("t1", "t2", toBB.getName());
+                bgt(t1, t2, toBB.getName());
                 break;
             case "<=":
-                ble("t1", "t2", toBB.getName());
+                ble(t1, t2, toBB.getName());
                 break;
             case ">=":
-                ble("t2", "t1", toBB.getName());
+                ble(t2, t1, toBB.getName());
                 break;
         }
+    }
+
+    @Override
+    public void optimize() {
+        r1.read_ex(this);
+        r2.read_ex(this);
     }
 
     @Override

@@ -21,16 +21,37 @@ public class MallocInstruction extends IRInstruction {
     }
 
     @Override
-    public void codegen() {
+    public void replace_lhs_with(VirtualRegister a, VirtualRegister b) {
+        if (start_addr == a)
+            start_addr = b;
+        else
+            assert false;
+    }
+
+    @Override
+    public void codegen(RegisterAllocator regManager) {
         if (this.is_class_malloc) {
             li("a0", malloc_size_int);
             call("malloc");
-            SW("a0", start_addr.getAddrValue(), "sp");
+            String s = regManager.askForReg(start_addr, getId(), false);
+            mv(s, "a0");
+            //SW("a0", start_addr.getAddrValue(), "sp");
         } else {
-            LW("a0", malloc_size.getAddrValue(), "sp");
+            String ms = regManager.askForReg(malloc_size, getId(), true);
+            mv("a0", ms);
+            //LW("a0", malloc_size.getAddrValue(), "sp");
             call("malloc");
-            SW("a0", start_addr.getAddrValue(), "sp");
+            String s = regManager.askForReg(start_addr, getId(), false);
+            mv(s, "a0");
+            //SW("a0", start_addr.getAddrValue(), "sp");
         }
+    }
+
+    @Override
+    public void optimize() {
+        start_addr.write_ex(this);
+        if (!this.is_class_malloc)
+            malloc_size.read_ex(this);
     }
 
     @Override

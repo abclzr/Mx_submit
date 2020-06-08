@@ -17,21 +17,33 @@ public class StoreInstruction extends IRInstruction {
     }
 
     @Override
-    public void codegen() {
-        LW("t1", addr.getAddrValue(), "sp");
+    public void replace_lhs_with(VirtualRegister a, VirtualRegister b) {
+        assert false;
+    }
+
+    @Override
+    public void codegen(RegisterAllocator regManager) {
+        String a = regManager.askForReg(addr, getId(), true);
+        String v = null;
+        if (value != null) v = regManager.askForReg(value, getId(), true);
         if (width == 4) {
             if(value != null) {
-                LW("t2", value.getAddrValue(), "sp");
-                SW("t2", offset, "t1");
+                SW(v, offset, a);
             } else
-                SW("x0", offset, "t1");
+                SW("x0", offset, a);
         } else {
             if (value != null) {
-                LB("t2", value.getAddrValue(), "sp");
-                SB("t2", offset, "t1");
+                SB(v, offset, a);
             } else
-                SB("x0", offset, "t1");
+                SB("x0", offset, a);
         }
+    }
+
+    @Override
+    public void optimize() {
+        addr.read_ex(this);
+        if (value != null)
+            value.read_ex(this);
     }
 
     @Override
