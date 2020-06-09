@@ -53,17 +53,22 @@ public class Main {
 
             //ps = new PrintStream(new FileOutputStream("test.ir"));
             //System.setOut(ps);
+
             IRBuilder irBuilder = new IRBuilder(globalScope);
             irBuilder.visit((ProgramNode) root);
             //irBuilder.printall();
 
             //ps = new PrintStream(new FileOutputStream("test.iro"));
             //System.setOut(ps);
+
             irBuilder.optimize();
+
             irBuilder.registerAllocate();
+
             //irBuilder.printall();
             ps = new PrintStream(new FileOutputStream("output.s"));
             System.setOut(ps);
+
             irBuilder.codegen();
         } catch (Exception e) {
             e.printStackTrace();

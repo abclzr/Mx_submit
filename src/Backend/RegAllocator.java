@@ -47,7 +47,7 @@ public class RegAllocator {
         }
         while (!(simplifyWorklist.isEmpty() && worklistMoves.isEmpty() && freezeWorklist.isEmpty() && spillWorklist.isEmpty()));
         assignColors(func);
-        /*
+    /*
         if (!spilledNodes.isEmpty()) {
             rewriteProgram(func);
             exec(func);
@@ -365,8 +365,9 @@ public class RegAllocator {
             var okColors = new HashSet<>(MachineRegister.usefulRegs);
             assert okColors.size() == K;
             for (var w : adjList.get(n)) {
-                if (setUnion(coloredNodes, precolored).contains(getAlias(w))) {
-                    okColors.remove(getAlias(w).getColor());
+                var aw = getAlias(w);
+                if (coloredNodes.contains(aw) || precolored.contains(aw)) {
+                    okColors.remove(aw.getColor());
                 }
             }
             if (okColors.isEmpty()) {
