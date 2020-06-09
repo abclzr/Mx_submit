@@ -2,6 +2,7 @@ package Frontend;
 
 import Semantic.Type;
 
+import java.util.HashSet;
 import java.util.List;
 
 public class CallInstruction extends IRInstruction {
@@ -43,17 +44,11 @@ public class CallInstruction extends IRInstruction {
         int i = 0;
         for (VirtualRegister p : params) {
             if (i <= 7) {
-                String pp = regManager.askForReg(p, getId(), true);
+                String pp = getUseReg(p);
                 mv("a" + i, pp);
-                /*
-                if (p.getWidth() == 4)
-                    LW("a" + i, p.getAddrValue(), "sp");
-                else
-                    LB("a" + i, p.getAddrValue(), "sp");
-                 */
             } else {
                 int offset = -callee.getStackStorage() + callee.getParams().get(i).getAddrValue();
-                String pp = regManager.askForReg(p, getId(), true);
+                String pp = getUseReg(p);
                 if (p.getWidth() == 4) {
                     SW(pp, offset, "sp");
                 } else {
@@ -64,22 +59,34 @@ public class CallInstruction extends IRInstruction {
         }
         call(callee.getFuncName());
         if (has_return_value) {
-            String t1 = regManager.askForReg(lhs, getId(), false);
+            String t1 = getDefReg(lhs);
             mv(t1, "a0");
-            /*
-            if (width == 4)
-                SW("a0", lhs.getAddrValue(), "sp");
-            else
-                SB("a0", lhs.getAddrValue(), "sp");
-             */
+            checkDefReg(lhs);
         }
     }
 
     @Override
     public void optimize() {
-        if (has_return_value) lhs.write_ex(this);
-        for (VirtualRegister x : params)
+        if (has_return_value) {
+            lhs.write_ex(this);
+        }
+        for (VirtualRegister x : params) {
             x.read_ex(this);
+        }
+    }
+
+    @Override
+    public void collectUseAndDef() {
+        use = new HashSet<>();
+        def = new HashSet<>();
+        if (has_return_value) {
+            def.add(lhs);
+            lhs.addDef(this);
+        }
+        for (VirtualRegister x : params) {
+            use.add(x);
+            x.addUse(this);
+        }
     }
 
     @Override

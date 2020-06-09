@@ -1,5 +1,10 @@
 package Frontend;
 
+import Backend.BaseRegister;
+
+import java.util.HashSet;
+import java.util.Set;
+
 public class BranchInstruction extends IRInstruction {
     VirtualRegister r1, r2;
     String bop;
@@ -21,13 +26,8 @@ public class BranchInstruction extends IRInstruction {
 
     @Override
     public void codegen(RegisterAllocator regManager) {
-        String t1 =regManager.askForReg(r1, getId(), true);
-        String t2 =regManager.askForReg(r2, getId(), true);
-        /*
-        LW("t1", r1.getAddrValue(), "sp");
-        LW("t2", r2.getAddrValue(), "sp");
-         */
-        regManager.flush_all(getId());
+        String t1 = getUseReg(r1);
+        String t2 = getUseReg2(r2);
         switch (bop) {
             case "<":
                 bgt(t2, t1, toBB.getName());
@@ -48,6 +48,16 @@ public class BranchInstruction extends IRInstruction {
     public void optimize() {
         r1.read_ex(this);
         r2.read_ex(this);
+    }
+
+    @Override
+    public void collectUseAndDef() {
+        use = new HashSet<>();
+        def = new HashSet<>();
+        use.add(r1);
+        r1.addUse(this);
+        use.add(r2);
+        r2.addUse(this);
     }
 
     @Override

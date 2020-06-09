@@ -60,6 +60,7 @@ public class Main {
             //ps = new PrintStream(new FileOutputStream("test.iro"));
             //System.setOut(ps);
             irBuilder.optimize();
+            irBuilder.registerAllocate();
             //irBuilder.printall();
             ps = new PrintStream(new FileOutputStream("output.s"));
             System.setOut(ps);

@@ -1,9 +1,10 @@
 package Frontend;
 
+import Backend.BaseRegister;
 import Semantic.Type;
 import Semantic.VariableSymbol;
 
-public class VirtualRegister {
+public class VirtualRegister extends BaseRegister {
     private CodeSegment inCodeSegment;
     private VariableSymbol varSymbol;
     private int value;
@@ -91,7 +92,10 @@ public class VirtualRegister {
         this.value = 0;
         this.width = tp.getWidth();
         this.type = tp;
-        if (inCode != null) this.relativeAddress = inCode.Allocate(this.width);
+        if (inCode != null) {
+            this.relativeAddress = inCode.Allocate(this.width);
+            inCode.addVirtual(this);
+        }
         this.addr = new Address();
         this.addr.setAddr(this.relativeAddress);
         this.read_times = 0;

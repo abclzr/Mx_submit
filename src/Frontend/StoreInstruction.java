@@ -2,6 +2,8 @@ package Frontend;
 
 import Semantic.Type;
 
+import java.util.HashSet;
+
 public class StoreInstruction extends IRInstruction {
     private VirtualRegister addr, value;
     int offset;
@@ -23,9 +25,9 @@ public class StoreInstruction extends IRInstruction {
 
     @Override
     public void codegen(RegisterAllocator regManager) {
-        String a = regManager.askForReg(addr, getId(), true);
+        String a = getUseReg(addr);
         String v = null;
-        if (value != null) v = regManager.askForReg(value, getId(), true);
+        if (value != null) v = getUseReg2(value);
         if (width == 4) {
             if(value != null) {
                 SW(v, offset, a);
@@ -42,8 +44,21 @@ public class StoreInstruction extends IRInstruction {
     @Override
     public void optimize() {
         addr.read_ex(this);
-        if (value != null)
+        if (value != null) {
             value.read_ex(this);
+        }
+    }
+
+    @Override
+    public void collectUseAndDef() {
+        use = new HashSet<>();
+        def = new HashSet<>();
+        use.add(addr);
+        addr.addUse(this);
+        if (value != null) {
+            use.add(value);
+            value.addUse(this);
+        }
     }
 
     @Override

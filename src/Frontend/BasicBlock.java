@@ -15,6 +15,7 @@ public class BasicBlock {
     private List<BasicBlock> post;
     private int id;
     private IRInstruction headIRInst;
+    public List<IRInstruction> newInstList;
 
     public BasicBlock getPos() {
         return pos;
@@ -73,12 +74,12 @@ public class BasicBlock {
 
     public void addPred(BasicBlock a) {
         pred.add(a);
-        if (a != null) a.post.add(this);
+        a.post.add(this);
     }
 
     public void addPost(BasicBlock a) {
         post.add(a);
-        if (a != null) a.pred.add(this);
+        a.pred.add(this);
     }
 
     public String getName() {
@@ -125,11 +126,12 @@ public class BasicBlock {
             id = x.getId();
             x = x.getPostInst();
         }
-        regManager.flush_all(id + 1);
+        //regManager.flush_all(id + 1);
     }
 
     public void optimize() {
         makeIRList();
+        if (getPos() != null) addPost(getPos());
         IRInstruction x = headIRInst.getPostInst();
         while (x != null) {
             x.setId(enclosureCodeSegment.tmp++);
@@ -152,8 +154,8 @@ public class BasicBlock {
                             //c.getPostInst().replace_rhs_with(lhs, rhs);
                         }
                     }
-                } else {
-                    VirtualRegister rhs = c.getRhs();
+                } else if (c.getRhs() instanceof VirtualRegister){
+                    VirtualRegister rhs = (VirtualRegister) c.getRhs();
                     if (rhs.getRead_times() == 1 && rhs.getWrite_times() == 1) {
                         if (rhs.getLast_write() == c.getPreInst()) {
                             c.getPreInst().replace_lhs_with(rhs, lhs);
@@ -163,6 +165,14 @@ public class BasicBlock {
                     }
                 }
             }
+            x = x.getPostInst();
+        }
+
+        newInstList = new ArrayList<>();
+        x = headIRInst.getPostInst();
+        while (x != null) {
+            newInstList.add(x);
+            x.collectUseAndDef();
             x = x.getPostInst();
         }
     }

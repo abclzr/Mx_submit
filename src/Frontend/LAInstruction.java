@@ -2,6 +2,8 @@ package Frontend;
 
 import Semantic.Type;
 
+import java.util.HashSet;
+
 public class LAInstruction extends IRInstruction {
     VirtualRegister lhs;//rhs is a pointer
     String gv;
@@ -25,13 +27,22 @@ public class LAInstruction extends IRInstruction {
 
     @Override
     public void codegen(RegisterAllocator regManager) {
-        String l = regManager.askForReg(lhs, getId(), false);
+        String l = getDefReg(lhs);
         la(l, gv);
+        checkDefReg(lhs);
     }
 
     @Override
     public void optimize() {
         lhs.write_ex(this);
+    }
+
+    @Override
+    public void collectUseAndDef() {
+        use = new HashSet<>();
+        def = new HashSet<>();
+        def.add(lhs);
+        lhs.addDef(this);
     }
 
     @Override

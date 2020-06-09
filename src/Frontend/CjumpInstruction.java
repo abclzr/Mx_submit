@@ -1,5 +1,7 @@
 package Frontend;
 
+import java.util.HashSet;
+
 public class CjumpInstruction extends IRInstruction {
     private VirtualRegister c;
     private boolean jump_when_true;
@@ -20,9 +22,7 @@ public class CjumpInstruction extends IRInstruction {
 
     @Override
     public void codegen(RegisterAllocator regManager) {
-        String t1 = regManager.askForReg(c, getId(), true);
-        //LB("t1", c.getAddrValue(), "sp");
-        regManager.flush_all(getId());
+        String t1 = getUseReg(c);
         if (jump_when_true)
             bnez(t1, des.getName());
         else
@@ -32,6 +32,14 @@ public class CjumpInstruction extends IRInstruction {
     @Override
     public void optimize() {
         c.read_ex(this);
+    }
+
+    @Override
+    public void collectUseAndDef() {
+        use = new HashSet<>();
+        def = new HashSet<>();
+        use.add(c);
+        c.addUse(this);
     }
 
     @Override

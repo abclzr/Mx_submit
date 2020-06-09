@@ -1,5 +1,10 @@
 package Frontend;
 
+import Backend.BaseRegister;
+
+import java.util.HashSet;
+import java.util.Set;
+
 public class BinaryInstruction extends IRInstruction {
     private VirtualRegister lhs, rhs1, rhs2;
     private int imm_rhs2;
@@ -41,14 +46,8 @@ public class BinaryInstruction extends IRInstruction {
     public void codegen(RegisterAllocator regManager) {
         if (rhs1 != null) {
             if (is_imm) {
-                String t1 = regManager.askForReg(rhs1, getId(), true);
-                /*
-                if (rhs1.getWidth() == 4) {
-                    LW(t1, rhs1.getAddrValue(), "sp");
-                } else {
-                    LB(t1, rhs1.getAddrValue(), "sp");
-                }*/
-                String t3 = regManager.askForReg(lhs, getId(), false);
+                String t1 = getUseReg(rhs1);
+                String t3 = getDefReg(lhs);
                 switch (bop) {
                     case "+":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
@@ -160,24 +159,11 @@ public class BinaryInstruction extends IRInstruction {
                         snez(t3, t3);
                         break;
                 }
-                /*
-                if (width == 4) {
-                    SW(t3, lhs.getAddrValue(), "sp");
-                } else {
-                    SB(t3, lhs.getAddrValue(), "sp");
-                }*/
+                checkDefReg(lhs);
             } else {
-                String t1 = regManager.askForReg(rhs1, getId(), true);
-                String t2 = regManager.askForReg(rhs2, getId(), true);
-                String t3 = regManager.askForReg(lhs, getId(), false);
-                /*
-                if (rhs1.getWidth() == 4) {
-                    LW(t1, rhs1.getAddrValue(), "sp");
-                    LW(t2, rhs2.getAddrValue(), "sp");
-                } else {
-                    LB(t1, rhs1.getAddrValue(), "sp");
-                    LB(t2, rhs2.getAddrValue(), "sp");
-                }*/
+                String t1 = getUseReg(rhs1);
+                String t2 = getUseReg2(rhs2);
+                String t3 = getDefReg(lhs);
                 switch (bop) {
                     case "+":
                         add(t3, t1, t2);
@@ -232,16 +218,11 @@ public class BinaryInstruction extends IRInstruction {
                         snez(t3, t3);
                         break;
                 }
-                /*
-                if (width == 4) {
-                    SW(t3, lhs.getAddrValue(), "sp");
-                } else {
-                    SB(t3, lhs.getAddrValue(), "sp");
-                }*/
+                checkDefReg(lhs);
             }
         } else {
             if (is_imm) {
-                String t3 = regManager.askForReg(lhs, getId(), false);
+                String t3 = getDefReg(lhs);
                 switch (bop) {
                     case "+":
                         if (-2048 <= imm_rhs2 && imm_rhs2 <= 2047)
@@ -308,21 +289,10 @@ public class BinaryInstruction extends IRInstruction {
                         snez(t3, "t5");
                         break;
                 }
-                /*
-                if (width == 4) {
-                    SW(t3, lhs.getAddrValue(), "sp");
-                } else {
-                    SB(t3, lhs.getAddrValue(), "sp");
-                }*/
+                checkDefReg(lhs);
             } else {
-                String t2 = regManager.askForReg(rhs2, getId(), true);
-                String t3 = regManager.askForReg(lhs, getId(), true);
-                /*
-                if (rhs2.getWidth() == 4) {
-                    LW(t2, rhs2.getAddrValue(), "sp");
-                } else {
-                    LB(t2, rhs2.getAddrValue(), "sp");
-                }*/
+                String t2 = getUseReg2(rhs2);
+                String t3 = getDefReg(lhs);
                 switch (bop) {
                     case "+":
                         add(t3, "x0", t2);
@@ -377,21 +347,38 @@ public class BinaryInstruction extends IRInstruction {
                         snez(t3, t3);
                         break;
                 }
-                /*
-                if (width == 4) {
-                    SW(t3, lhs.getAddrValue(), "sp");
-                } else {
-                    SB(t3, lhs.getAddrValue(), "sp");
-                }*/
+                checkDefReg(lhs);
             }
         }
     }
 
+
+
     @Override
     public void optimize() {
-        if (rhs1 != null) rhs1.read_ex(this);
-        if (!is_imm) rhs2.read_ex(this);
+        if (rhs1 != null) {
+            rhs1.read_ex(this);
+        }
+        if (!is_imm) {
+            rhs2.read_ex(this);
+        }
         lhs.write_ex(this);
+    }
+
+    @Override
+    public void collectUseAndDef() {
+        use = new HashSet<>();
+        def = new HashSet<>();
+        if (rhs1 != null) {
+            use.add(rhs1);
+            rhs1.addUse(this);
+        }
+        if (!is_imm) {
+            use.add(rhs2);
+            rhs2.addUse(this);
+        }
+        def.add(lhs);
+        lhs.addDef(this);
     }
 
     @Override

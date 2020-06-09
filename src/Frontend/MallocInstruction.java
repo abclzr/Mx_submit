@@ -1,5 +1,7 @@
 package Frontend;
 
+import java.util.HashSet;
+
 public class MallocInstruction extends IRInstruction {
     VirtualRegister start_addr, malloc_size;
     private int malloc_size_int;
@@ -33,25 +35,37 @@ public class MallocInstruction extends IRInstruction {
         if (this.is_class_malloc) {
             li("a0", malloc_size_int);
             call("malloc");
-            String s = regManager.askForReg(start_addr, getId(), false);
+            String s = getDefReg(start_addr);
             mv(s, "a0");
-            //SW("a0", start_addr.getAddrValue(), "sp");
+            checkDefReg(start_addr);
         } else {
-            String ms = regManager.askForReg(malloc_size, getId(), true);
+            String ms = getUseReg(malloc_size);
             mv("a0", ms);
-            //LW("a0", malloc_size.getAddrValue(), "sp");
             call("malloc");
-            String s = regManager.askForReg(start_addr, getId(), false);
+            String s = getDefReg(start_addr);
             mv(s, "a0");
-            //SW("a0", start_addr.getAddrValue(), "sp");
+            checkDefReg(start_addr);
         }
     }
 
     @Override
     public void optimize() {
         start_addr.write_ex(this);
-        if (!this.is_class_malloc)
+        if (!this.is_class_malloc) {
             malloc_size.read_ex(this);
+        }
+    }
+
+    @Override
+    public void collectUseAndDef() {
+        use = new HashSet<>();
+        def = new HashSet<>();
+        def.add(start_addr);
+        start_addr.addDef(this);
+        if (!this.is_class_malloc) {
+            use.add(malloc_size);
+            malloc_size.addUse(this);
+        }
     }
 
     @Override

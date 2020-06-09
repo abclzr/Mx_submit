@@ -1,5 +1,7 @@
 package Frontend;
 
+import java.util.HashSet;
+
 public class ReturnInstruction extends IRInstruction {
     private VirtualRegister returnValue;
     private CodeSegment enclosureSegment;
@@ -18,11 +20,10 @@ public class ReturnInstruction extends IRInstruction {
     @Override
     public void codegen(RegisterAllocator regManager) {
         if (returnValue != null) {
-            String rv = regManager.askForReg(returnValue, getId(), true);
+            String rv = getUseReg(returnValue);
             mv("a0", rv);
         } else
             mv("a0", "x0");
-        regManager.flush_all(getId());
         if (enclosureSegment.getRaPointer() != null)
             LW("ra", enclosureSegment.getRaPointer().getAddrValue(), "sp");
         int i = 0;
@@ -36,8 +37,19 @@ public class ReturnInstruction extends IRInstruction {
 
     @Override
     public void optimize() {
-        if (returnValue != null)
+        if (returnValue != null) {
             returnValue.read_ex(this);
+        }
+    }
+
+    @Override
+    public void collectUseAndDef() {
+        use = new HashSet<>();
+        def = new HashSet<>();
+        if (returnValue != null) {
+            use.add(returnValue);
+            returnValue.addUse(this);
+        }
     }
 
     @Override

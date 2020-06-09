@@ -1,6 +1,8 @@
 package Frontend;
 
 import AST.*;
+import Backend.BaseRegister;
+import Backend.MachineRegister;
 import Semantic.*;
 
 import java.util.ArrayList;
@@ -31,6 +33,7 @@ public class IRBuilder extends ASTVisitor {
         segmentList = new ArrayList<>();
         constPoolWriteBack = new ArrayList<>();
         defaultConstructorList = new ArrayList<>();
+        MachineRegister.init();
     }
 
     public void printall() {
@@ -201,15 +204,21 @@ public class IRBuilder extends ASTVisitor {
                 if (cs.getFunctionSymbol().getType() == null) {
                     currentSegment = cs;
                     currentBlock = cs.getTailBlock();
-//                    VirtualRegister th = new VirtualRegister(currentSegment, Scope.intType);
                     currentBlock.addInst(new MallocInstruction(IRInstruction.op.MALLOC, cs.getThisPointer(), cs.getClassType().getAllocWidth()));
-//                    currentBlock.addInst(new SStoreInstruction(IRInstruction.op.SSTORE, cs.getThisPointer().getAddr(), th, Scope.intType));
                     currentSegment.setConstructorReturnValue(cs.getThisPointer());
                     CollectStmt(cs.getFunctionSymbol().getBlockContext().getStatementList(), null, null);
                     currentBlock.addInst(new ReturnInstruction(IRInstruction.op.RETURN, cs.getThisPointer(), currentSegment));
                 } else {
                     currentSegment = cs;
                     currentBlock = cs.getTailBlock();
+                    int i = 0;
+                    for (var p : cs.getParams()) {
+                        if (i <= 7)
+                            currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, p, (BaseRegister) MachineRegister.get("a"+i)));
+                        else
+                            currentBlock.addInst(new LoadInstruction(IRInstruction.op.LOAD, p, (BaseRegister) MachineRegister.get("sp"), p.getAddrValue(), p.getWidth()));
+                        i++;
+                    }
                     CollectStmt(cs.getFunctionSymbol().getBlockContext().getStatementList(), null, null);
                     currentBlock.addInst(new ReturnInstruction(IRInstruction.op.RETURN, null, currentSegment));
                 }
@@ -239,6 +248,7 @@ public class IRBuilder extends ASTVisitor {
                         BasicBlock bb1 = currentBlock.split();
                         BasicBlock bb2 = bb1.split();
                         currentBlock.addInst(new CjumpInstruction(IRInstruction.op.CJUMP, ifExpr, false, bb2));
+                        currentBlock.addPost(bb2);
                         currentBlock = bb1;
                         CollectStmt(node.getIfStmt1(), continueBlock, breakBlock);
                         if (node.getIfStmt2() == null) {
@@ -246,6 +256,7 @@ public class IRBuilder extends ASTVisitor {
                         } else {
                             BasicBlock bb3 = bb2.split();
                             currentBlock.addInst(new JumpInstruction(IRInstruction.op.JUMP, bb3));
+                            currentBlock.addPost(bb3);
                             currentBlock = bb2;
                             CollectStmt(node.getIfStmt2(), continueBlock, breakBlock);
                             currentBlock = bb3;
@@ -264,6 +275,7 @@ public class IRBuilder extends ASTVisitor {
                         if (node.getForControl().getConditionExpr() != null) {
                             VirtualRegister fC = node.getForControl().getConditionExpr().getVirtualRegister();
                             currentBlock.addInst(new CjumpInstruction(IRInstruction.op.CJUMP, fC, false, forAfter));
+                            currentBlock.addPost(forAfter);
                         }
                         currentBlock = forBody;
                         if (node.getForStatement() != null)
@@ -271,6 +283,7 @@ public class IRBuilder extends ASTVisitor {
                         currentBlock = forUpdate;
                         ComputExprValue(node.getForControl().getUpdateExpr());
                         currentBlock.addInst(new JumpInstruction(IRInstruction.op.JUMP, forCond));
+                        currentBlock.addPost(forCond);
                         currentBlock = forAfter;
                         break;
                     case WHILE:
@@ -281,9 +294,11 @@ public class IRBuilder extends ASTVisitor {
                         ComputExprValue(node.getWhileExpr());
                         VirtualRegister wC = node.getWhileExpr().getVirtualRegister();
                         currentBlock.addInst(new CjumpInstruction(IRInstruction.op.CJUMP, wC, false, whileAfter));
+                        currentBlock.addPost(whileAfter);
                         currentBlock = whileBody;
                         CollectStmt(node.getWhileStmt(), whileCond, whileAfter);
                         currentBlock.addInst(new JumpInstruction(IRInstruction.op.JUMP, whileCond));
+                        currentBlock.addPost(whileCond);
                         currentBlock = whileAfter;
                         break;
                     case RETURN:
@@ -299,9 +314,11 @@ public class IRBuilder extends ASTVisitor {
                         break;
                     case BREAK:
                         currentBlock.addInst(new JumpInstruction(IRInstruction.op.JUMP, breakBlock));
+                        currentBlock.addPost(breakBlock);
                         break;
                     case CONTINUE:
                         currentBlock.addInst(new JumpInstruction(IRInstruction.op.JUMP, continueBlock));
+                        currentBlock.addPost(continueBlock);
                         break;
                     case EXPR:
                         ComputExprValue(node.getExpr());
@@ -315,10 +332,8 @@ public class IRBuilder extends ASTVisitor {
                                 ComputExprValue(v.getExpr());
                                 VirtualRegister vv = v.getExpr().getVirtualRegister();
                                 currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, vv));
-//                                currentBlock.addInst(new SStoreInstruction(IRInstruction.op.SSTORE, vn.getAddr(), vv, type));
                             } else
                                 currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, 0));
-//                                currentBlock.addInst(new SStoreInstruction(IRInstruction.op.SSTORE, vn.getAddr(), null, type));
                         });
                         break;
             }
@@ -359,6 +374,7 @@ public class IRBuilder extends ASTVisitor {
         currentBlock.addInst(new StoreInstruction(IRInstruction.op.STORE, pointer, 0, ctx, ctxType));
         currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, pointer, pointer, "+", jump_size));
         currentBlock.addInst(new BranchInstruction(IRInstruction.op.BRANCH, pointer, "<", endPointer, loopBlock));
+        currentBlock.addPost(loopBlock);
         currentBlock = currentBlock.split();
         return rt;
     }
@@ -369,11 +385,6 @@ public class IRBuilder extends ASTVisitor {
         switch (node.getType()) {
             case THIS:
                 node.setVirtualRegister(currentSegment.getThisPointer());
-                /*
-                vn = new VirtualRegister(currentSegment, Scope.intType);
-                VirtualRegister th = currentSegment.getThisPointer();
-                currentBlock.addInst(new SLoadInstruction(IRInstruction.op.SLOAD, vn, th.getAddr(), Scope.intType));
-                node.setVirtualRegister(vn);*/
                 break;
             case LITERAL:
                 switch (node.getLiteralNode().getLiteralType()) {
@@ -587,8 +598,10 @@ public class IRBuilder extends ASTVisitor {
                         BasicBlock bb2 = bb1.split();
                         BasicBlock bb3 = bb2.split();
                         currentBlock.addInst(new CjumpInstruction(IRInstruction.op.CJUMP, bool_res, true, bb2));
+                        currentBlock.addPost(bb2);
                         bb1.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, 1));
                         bb1.addInst(new JumpInstruction(IRInstruction.op.JUMP, bb3));
+                        bb1.addPost(bb3);
                         bb2.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, 0));//NOTICE: not SSA!!
                         currentBlock = bb3;
                         node.setVirtualRegister(vn);
@@ -667,24 +680,30 @@ public class IRBuilder extends ASTVisitor {
                         BasicBlock bb4 = bb3.split();
                         if (node.getOp().equals("&&")) {
                             currentBlock.addInst(new CjumpInstruction(IRInstruction.op.CJUMP, r1, false, bb3));
+                            currentBlock.addPost(bb3);
                             currentBlock = bb1;
                             ComputExprValue(node.getBinaryExpr2());
                             r2 = node.getBinaryExpr2().getVirtualRegister();
                             currentBlock.addInst(new CjumpInstruction(IRInstruction.op.CJUMP, r2, false, bb3));
+                            currentBlock.addPost(bb3);
                             vn = new VirtualRegister(currentSegment, Scope.boolType);
                             bb2.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, 1));
                             bb2.addInst(new JumpInstruction(IRInstruction.op.JUMP, bb4));
+                            bb2.addPost(bb4);
                             bb3.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, 0));
                             currentBlock = bb4;//not SSA!
                         } else {
                             currentBlock.addInst(new CjumpInstruction(IRInstruction.op.CJUMP, r1, true, bb3));
+                            currentBlock.addPost(bb3);
                             currentBlock = bb1;
                             ComputExprValue(node.getBinaryExpr2());
                             r2 = node.getBinaryExpr2().getVirtualRegister();
                             currentBlock.addInst(new CjumpInstruction(IRInstruction.op.CJUMP, r2, true, bb3));
+                            currentBlock.addPost(bb3);
                             vn = new VirtualRegister(currentSegment, Scope.boolType);
                             bb2.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, 0));
                             bb2.addInst(new JumpInstruction(IRInstruction.op.JUMP, bb4));
+                            bb2.addPost(bb4);
                             bb3.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, 1));
                             currentBlock = bb4;//not SSA!
                         }
@@ -963,6 +982,12 @@ public class IRBuilder extends ASTVisitor {
         });
     }
 
+    public void livenessAnalysis() {
+        segmentList.forEach(x -> {
+            x.livenessAnalysis();
+        });
+    }
+
     public void codegen() {
         System.out.println("\t.text\n");
         segmentList.forEach(x -> {
@@ -981,5 +1006,11 @@ public class IRBuilder extends ASTVisitor {
             }
         });
         constantPoolTable.printall();
+    }
+
+    public void registerAllocate() {
+        segmentList.forEach(x -> {
+            x.registerAllocate();
+        });
     }
 }

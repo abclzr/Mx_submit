@@ -1,5 +1,7 @@
 package Frontend;
 
+import java.util.HashSet;
+
 public class JumpInstruction extends IRInstruction {
     BasicBlock des;
     JumpInstruction(op o, BasicBlock des) {
@@ -15,13 +17,17 @@ public class JumpInstruction extends IRInstruction {
 
     @Override
     public void codegen(RegisterAllocator regManager) {
-        regManager.flush_all(getId());
         j(des.getName());
     }
 
     @Override
     public void optimize() {
+    }
 
+    @Override
+    public void collectUseAndDef() {
+        use = new HashSet<>();
+        def = new HashSet<>();
     }
 
     @Override

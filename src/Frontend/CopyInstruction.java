@@ -1,11 +1,16 @@
 package Frontend;
 
+import Backend.BaseRegister;
+
+import java.util.HashSet;
+
 public class CopyInstruction extends IRInstruction {
-    private VirtualRegister lhs, rhs;
+    private VirtualRegister lhs;
+    private BaseRegister rhs;
     private int rhs_int;
     private type tp;
 
-    public CopyInstruction(op o, VirtualRegister a, VirtualRegister b) {
+    public CopyInstruction(op o, VirtualRegister a, BaseRegister b) {
         super(o);
         assert o == op.COPY;
         this.lhs = a;
@@ -25,7 +30,7 @@ public class CopyInstruction extends IRInstruction {
         return lhs;
     }
 
-    public VirtualRegister getRhs() {
+    public BaseRegister getRhs() {
         return rhs;
     }
 
@@ -50,30 +55,15 @@ public class CopyInstruction extends IRInstruction {
         String t1, t2;
         switch (tp) {
             case reg_to_reg:
-                t2 = regManager.askForReg(rhs, getId(), true);
-                t1 = regManager.askForReg(lhs, getId(), false);
+                t2 = getUseReg(rhs);
+                t1 = getDefReg(lhs);
                 mv(t1, t2);
-                /*
-                if (rhs.getWidth() == 4)
-                    LW("t1", rhs.getAddrValue(), "sp");
-                else
-                    LB("t1", rhs.getAddrValue(), "sp");
-                if (lhs.getWidth() == 4)
-                    SW("t1", lhs.getAddrValue(), "sp");
-                else
-                    SB("t1", lhs.getAddrValue(), "sp");
-                 */
+                checkDefReg(lhs);
                 break;
             case val_to_reg:
-                t1 = regManager.askForReg(lhs, getId(), false);
+                t1 = getDefReg(lhs);
                 li(t1, rhs_int);
-                /*
-                li("t1", rhs_int);
-                if (lhs.getWidth() == 4)
-                    SW("t1", lhs.getAddrValue(), "sp");
-                else
-                    SB("t1", lhs.getAddrValue(), "sp");
-                 */
+                checkDefReg(lhs);
                 break;
         }
     }
@@ -81,8 +71,21 @@ public class CopyInstruction extends IRInstruction {
     @Override
     public void optimize() {
         lhs.write_ex(this);
-        if (tp == type.reg_to_reg)
-            rhs.read_ex(this);
+        if (tp == type.reg_to_reg && rhs instanceof VirtualRegister) {
+            ((VirtualRegister) rhs).read_ex(this);
+        }
+    }
+
+    @Override
+    public void collectUseAndDef() {
+        use = new HashSet<>();
+        def = new HashSet<>();
+        def.add(lhs);
+        lhs.addDef(this);
+        if (tp == type.reg_to_reg && rhs instanceof VirtualRegister) {
+            use.add(rhs);
+            rhs.addUse(this);
+        }
     }
 
     @Override

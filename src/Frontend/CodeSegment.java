@@ -1,11 +1,12 @@
 package Frontend;
 
+import Backend.BaseRegister;
+import Backend.RegAllocator;
 import Semantic.ClassType;
 import Semantic.FunctionSymbol;
 import Semantic.Scope;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class CodeSegment {
     private FunctionSymbol functionSymbol;
@@ -23,6 +24,8 @@ public class CodeSegment {
     public List<String> calleeRegList;
     public List<VirtualRegister> calleeVirtualList;
     private RegisterAllocator regManager;
+    public List<BasicBlock> blocks;
+    private Set<BaseRegister> allVirtual;
 
     public List<VirtualRegister> getParams() {
         return params;
@@ -129,6 +132,7 @@ public class CodeSegment {
         System.out.println("\t.type\t" + this.funcName + ",@function\n");
         System.out.println(this.funcName + ":");
         IRInstruction.ADDI("sp", "sp", -getStackStorage());
+        /*
         int i = 0;
         for (VirtualRegister param : params) {
             if (param.getWidth() == 4)
@@ -138,7 +142,8 @@ public class CodeSegment {
             i++;
             if (i > 7) break;
         }
-        i = 0;
+        */
+        int i = 0;
         for (VirtualRegister v : calleeVirtualList) {
             String r = calleeRegList.get(i++);
             IRInstruction.SW(r, v.getAddrValue(), "sp");
@@ -163,10 +168,76 @@ public class CodeSegment {
 
     public void optimize() {
         BasicBlock cs = headBlock;
+        blocks = new ArrayList<>();
         tmp = 0;
         while (cs != null) {
             cs.optimize();
+            blocks.add(cs);
             cs = cs.getPos();
         }
+    }
+
+    public Set<BaseRegister> getLiveOut(BasicBlock block) {
+        return liveOut.get(block);
+    }
+
+    private Map<BasicBlock, Set<BaseRegister>> liveIn = new HashMap<>();
+    private Map<BasicBlock, Set<BaseRegister>> liveOut = new HashMap<>();
+    private Map<BasicBlock, Set<BaseRegister>> gen = new HashMap<>();
+    private Map<BasicBlock, Set<BaseRegister>> kill = new HashMap<>();
+
+    public void livenessAnalysis() {
+        liveIn = new HashMap<>();
+        liveOut = new HashMap<>();
+        gen = new HashMap<>();
+        kill = new HashMap<>();
+
+        for (var block : blocks) {
+            liveIn.put(block, new HashSet<>());
+            liveOut.put(block, new HashSet<>());
+            gen.put(block, new HashSet<>());
+            kill.put(block, new HashSet<>());
+
+            for (var inst : block.newInstList) {
+                var t = new HashSet<>(inst.getUse());
+                t.removeAll(kill.get(block));
+                gen.get(block).addAll(t);
+                kill.get(block).addAll(inst.getDef());
+            }
+        }
+
+        boolean flag = true;
+        while (flag) {
+            flag = false;
+            for (var block : blocks) {
+                var newIn = new HashSet<>(liveOut.get(block));
+                newIn.removeAll(kill.get(block));
+                newIn.addAll(gen.get(block));
+                flag |= !newIn.equals(liveIn.get(block));
+                liveIn.put(block, newIn);
+
+                var newOut = new HashSet<BaseRegister>();
+                for (var succ : block.getPost()) {
+                    newOut.addAll(liveIn.getOrDefault(succ, new HashSet<>()));
+                }
+                flag |= !newOut.equals(liveOut.get(block));
+                liveOut.put(block, newOut);
+            }
+        }
+    }
+
+    private RegAllocator regAllocator;
+
+    public void registerAllocate() {
+        regAllocator = new RegAllocator(this);
+    }
+
+    public void addVirtual(BaseRegister v) {
+        if (allVirtual == null) allVirtual = new HashSet<>();
+        allVirtual.add(v);
+    }
+
+    public Set<BaseRegister> getAllVregs() {
+        return allVirtual;
     }
 }

@@ -24,7 +24,7 @@ public class RegisterAllocator {
         }
     }
 
-    String askForReg(VirtualRegister r, int id, boolean load) {
+    String aaskForReg(VirtualRegister r, int id, boolean load) {
         if (!load)
             r.setDirty(true);
         if (r.getOccupyReg() == null) {

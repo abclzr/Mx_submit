@@ -1,10 +1,56 @@
 package Frontend;
 
+import Backend.BaseRegister;
+
+import java.util.Collection;
+import java.util.Set;
+
 public abstract class IRInstruction {
     public op IRop;
     private IRInstruction preInst;
     private IRInstruction postInst;
     private int id;
+
+    protected Set<BaseRegister> use;
+    protected Set<BaseRegister> def;
+
+    public String getUseReg(BaseRegister r) {
+        if (r.color == null) {
+            VirtualRegister v = ((VirtualRegister) r);
+            if (v.getWidth() == 4)
+                LW("t1", v.getAddrValue(), "sp");
+            else
+                LB("t1", v.getAddrValue(), "sp");
+            return "t1";
+        } else
+            return r.color.getName();
+    }
+    public String getUseReg2(BaseRegister r) {
+        if (r.color == null) {
+            VirtualRegister v = ((VirtualRegister) r);
+            if (v.getWidth() == 4)
+                LW("t2", v.getAddrValue(), "sp");
+            else
+                LB("t2", v.getAddrValue(), "sp");
+            return "t2";
+        } else
+            return r.color.getName();
+    }
+    public String getDefReg(BaseRegister r) {
+        if (r.color == null) {
+            return "t3";
+        } else
+            return r.color.getName();
+    }
+    public void checkDefReg(BaseRegister r) {
+        if (r.color == null) {
+            VirtualRegister v = (VirtualRegister) r;
+            if (v.getWidth() == 4)
+                SW("t3", v.getAddrValue(), "sp");
+            else
+                SB("t3", v.getAddrValue(), "sp");
+        }
+    }
 
     public int getId() {
         return id;
@@ -41,6 +87,16 @@ public abstract class IRInstruction {
     public abstract void codegen(RegisterAllocator regManager);
 
     public abstract void optimize();
+
+    public abstract void collectUseAndDef();
+
+    public Set<BaseRegister> getUse() {
+        return use;
+    }
+
+    public Set<BaseRegister> getDef() {
+        return def;
+    }
 
     public enum op {RETURN, MALLOC, BINARY, UNARY, COPY, JUMP, CJUMP, BRANCH, PARAM, CALL, ARRAY, LOAD, STORE, SLOAD, SSTORE, GLOAD, GSTORE, SADD, GADD};
 

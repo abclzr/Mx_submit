@@ -2,6 +2,8 @@ package Frontend;
 
 import Semantic.Type;
 
+import java.util.HashSet;
+
 public class SAddInstruction extends IRInstruction {
     VirtualRegister lhs;//rhs is a pointer
     Address offset;
@@ -33,15 +35,22 @@ public class SAddInstruction extends IRInstruction {
 
     @Override
     public void codegen(RegisterAllocator regManager) {
-        String t1 = regManager.askForReg(lhs, getId(), false);
+        String t1 = getDefReg(lhs);
         ADDI(t1, "sp", offset.getAddr());
-//        ADDI("t1", "sp", offset.getAddr());
-//        SW("t1", lhs.getAddrValue(), "sp");
+        checkDefReg(lhs);
     }
 
     @Override
     public void optimize() {
         lhs.write_ex(this);
+    }
+
+    @Override
+    public void collectUseAndDef() {
+        use = new HashSet<>();
+        def = new HashSet<>();
+        def.add(lhs);
+        lhs.addDef(this);
     }
 
     @Override
