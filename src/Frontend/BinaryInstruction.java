@@ -89,6 +89,14 @@ public class BinaryInstruction extends IRInstruction {
                         sub(t3, t1, "t5");
                         break;
                     case "*":
+                        if (imm_rhs2 == 1) {
+                            mv(t3, t1);
+                            break;
+                        }
+                        if (imm_rhs2 == 4) {
+                            slli(t3, t1, "2");
+                            break;
+                        }
                         li("t5", imm_rhs2);
                         mul(t3, t1, "t5");
                         break;
