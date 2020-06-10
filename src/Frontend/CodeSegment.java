@@ -1,6 +1,7 @@
 package Frontend;
 
 import Backend.BaseRegister;
+import Backend.MachineRegister;
 import Backend.RegAllocator;
 import Semantic.ClassType;
 import Semantic.FunctionSymbol;
@@ -21,11 +22,16 @@ public class CodeSegment {
     private String funcName;
     private List<VirtualRegister> params;
     public int tmp;
-    public List<String> calleeRegList;
+    public List<String> calleeMachineList;
     public List<VirtualRegister> calleeVirtualList;
     private RegisterAllocator regManager;
     public List<BasicBlock> blocks;
     private Set<BaseRegister> allVirtual;
+    private int VirtualNumber = 0;
+
+    public int getVirtualNumber() {
+        return VirtualNumber++;
+    }
 
     public List<VirtualRegister> getParams() {
         return params;
@@ -81,14 +87,7 @@ public class CodeSegment {
         this.tailBlock = this.headBlock;
         if (inFunc != null) this.funcName = inFunc.getName();
         params = new ArrayList<>();
-        calleeRegList = new ArrayList<>();
-        calleeVirtualList = new ArrayList<>();
-        for (int i = 0; i <= 11; ++i) {
-            calleeRegList.add("s" + i);
-            calleeVirtualList.add(new VirtualRegister(this, Scope.intType));
-        }
-        regManager = new RegisterAllocator();
-        regManager.init(calleeRegList);
+        //regManager.init(calleeMachineList);
     }
 
     public FunctionSymbol getFunctionSymbol() {
@@ -132,20 +131,9 @@ public class CodeSegment {
         System.out.println("\t.type\t" + this.funcName + ",@function\n");
         System.out.println(this.funcName + ":");
         IRInstruction.ADDI("sp", "sp", -getStackStorage());
-        /*
-        int i = 0;
-        for (VirtualRegister param : params) {
-            if (param.getWidth() == 4)
-                IRInstruction.sw("a" + i, param.getAddrValue() + "(sp)");
-            else
-                IRInstruction.sb("a" + i, param.getAddrValue() + "(sp)");
-            i++;
-            if (i > 7) break;
-        }
-        */
         int i = 0;
         for (VirtualRegister v : calleeVirtualList) {
-            String r = calleeRegList.get(i++);
+            String r = calleeMachineList.get(i++);
             IRInstruction.SW(r, v.getAddrValue(), "sp");
         }
         if (getRaPointer() != null)
@@ -229,7 +217,21 @@ public class CodeSegment {
     private RegAllocator regAllocator;
 
     public void registerAllocate() {
+        Set<BaseRegister> copy = new HashSet<>(allVirtual);
         regAllocator = new RegAllocator(this);
+        Set<MachineRegister> a = new HashSet<>();
+        copy.forEach(x -> {
+            if (x.getColor() != null)
+                a.add(x.getColor());
+            else
+                ((VirtualRegister) x).askForSpace();
+        });
+        calleeMachineList = new ArrayList<>();
+        calleeVirtualList = new ArrayList<>();
+        for (var s : a) {
+            calleeMachineList.add(s.getName());
+            calleeVirtualList.add(new VirtualRegister(this, Scope.intType).askForSpace());
+        }
     }
 
     public void addVirtual(BaseRegister v) {

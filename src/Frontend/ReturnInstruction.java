@@ -28,7 +28,7 @@ public class ReturnInstruction extends IRInstruction {
             LW("ra", enclosureSegment.getRaPointer().getAddrValue(), "sp");
         int i = 0;
         for (VirtualRegister v : enclosureSegment.calleeVirtualList) {
-            String r = enclosureSegment.calleeRegList.get(i++);
+            String r = enclosureSegment.calleeMachineList.get(i++);
             IRInstruction.LW(r, v.getAddrValue(), "sp");
         }
         ADDI("sp", "sp", enclosureSegment.getStackStorage());

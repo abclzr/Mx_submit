@@ -57,7 +57,8 @@ public class CopyInstruction extends IRInstruction {
             case reg_to_reg:
                 t2 = getUseReg(rhs);
                 t1 = getDefReg(lhs);
-                mv(t1, t2);
+                if (!t1.equals(t2))
+                    mv(t1, t2);
                 checkDefReg(lhs);
                 break;
             case val_to_reg:
