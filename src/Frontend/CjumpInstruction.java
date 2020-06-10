@@ -1,6 +1,7 @@
 package Frontend;
 
 import java.util.HashSet;
+import java.util.Map;
 
 public class CjumpInstruction extends IRInstruction {
     private VirtualRegister c;
@@ -13,6 +14,10 @@ public class CjumpInstruction extends IRInstruction {
         this.c = c;
         this.des = des;
         this.jump_when_true = jwt;
+    }
+
+    public BasicBlock getDes() {
+        return des;
     }
 
     @Override
@@ -40,6 +45,13 @@ public class CjumpInstruction extends IRInstruction {
         def = new HashSet<>();
         use.add(c);
         c.addUse(this);
+    }
+
+    @Override
+    public IRInstruction copyWrite(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap) {
+        VirtualRegister newC = getOrPut(givenCs, virtualMap, c);
+        BasicBlock newDes = blockMap.get(des);
+        return new CjumpInstruction(op.CJUMP, newC, jump_when_true, newDes);
     }
 
     @Override

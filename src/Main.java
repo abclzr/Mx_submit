@@ -59,13 +59,13 @@ public class Main {
             //irBuilder.printall();
 
             //ps = new PrintStream(new FileOutputStream("test.iro"));
-            //System.setOut(ps);
+            //System.setOut(out);
 
+            irBuilder.inlineAnalysis();
+            //irBuilder.printall();
             irBuilder.optimize();
 
             irBuilder.registerAllocate();
-
-            //irBuilder.printall();
             ps = new PrintStream(new FileOutputStream("output.s"));
             System.setOut(ps);
 

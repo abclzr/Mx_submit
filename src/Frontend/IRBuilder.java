@@ -200,6 +200,10 @@ public class IRBuilder extends ASTVisitor {
         });
 
         segmentList.forEach(cs -> {
+            cs.mayFallInLoopCall();
+        });
+
+        segmentList.forEach(cs -> {
             if (cs.getFunctionSymbol() != null) {
                 if (cs.getFunctionSymbol().getType() == null) {
                     currentSegment = cs;
@@ -213,10 +217,15 @@ public class IRBuilder extends ASTVisitor {
                     currentBlock = cs.getTailBlock();
                     int i = 0;
                     for (var p : cs.getParams()) {
-                        if (i <= 7)
-                            currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, p, (BaseRegister) MachineRegister.get("a"+i)));
-                        else
-                            currentBlock.addInst(new LoadInstruction(IRInstruction.op.LOAD, p, (BaseRegister) MachineRegister.get("sp"), p.getAddrValue(), p.getWidth()));
+                        if (i <= 7) {
+                            CopyInstruction ci = new CopyInstruction(IRInstruction.op.COPY, p, (BaseRegister) MachineRegister.get("a" + i));
+                            currentBlock.addInst(ci);
+                            ci.setNeedToRemoveInInline(true);
+                        } else {
+                            LoadInstruction li = new LoadInstruction(IRInstruction.op.LOAD, p, (BaseRegister) MachineRegister.get("sp"), p.getAddrValue(), p.getWidth());
+                            currentBlock.addInst(li);
+                            li.setNeedToRemoveInInline(true);
+                        }
                         i++;
                     }
                     CollectStmt(cs.getFunctionSymbol().getBlockContext().getStatementList(), null, null);
@@ -488,6 +497,9 @@ public class IRBuilder extends ASTVisitor {
                     ComputExprValue(ex);
                     list.add(ex.getVirtualRegister());
                 }
+                currentBlock = currentBlock.split();
+                if (func.getCodeSegment().isMayFall())
+                    currentSegment.addCallTimes();
                 if (node.getExprType() != Scope.voidType) {
                     vn = new VirtualRegister(currentSegment, node.getExprType());
                     currentBlock.addInst(new CallInstruction(IRInstruction.op.CALL, vn, node.getExprType(), func.getCodeSegment(), list));
@@ -496,6 +508,7 @@ public class IRBuilder extends ASTVisitor {
                     currentBlock.addInst(new CallInstruction(IRInstruction.op.CALL, node.getExprType(), func.getCodeSegment(), list));
                     node.setVirtualRegister(null);
                 }
+                currentBlock = currentBlock.split();
                 break;
             case NEW:
                 CreatorNode cr = node.getCreator();
@@ -765,7 +778,7 @@ public class IRBuilder extends ASTVisitor {
                             currentBlock.addInst(new LAInstruction(IRInstruction.op.GADD, vn, varReg.getGlobalVarName(), var.getType()));
                             node.setVirtualRegister(vn);
                         } else {
-                            currentBlock.addInst(new SAddInstruction(IRInstruction.op.SADD, vn, offset, var.getType()));
+                            currentBlock.addInst(new SAddInstruction(IRInstruction.op.SADD, vn, varReg, var.getType()));
                             node.setVirtualRegister(vn);
                         }
                     } else {
@@ -1012,5 +1025,12 @@ public class IRBuilder extends ASTVisitor {
         segmentList.forEach(x -> {
             x.registerAllocate();
         });
+    }
+
+    public void inlineAnalysis() {
+        for (var cs : segmentList) {
+            if (cs.getCallTimes() <= 200)
+                cs.inlineAnalysis();
+        }
     }
 }

@@ -5,6 +5,7 @@ import Backend.MachineRegister;
 import Semantic.Type;
 
 import java.util.HashSet;
+import java.util.Map;
 
 public class LoadInstruction extends IRInstruction {
     VirtualRegister lhs;
@@ -68,6 +69,13 @@ public class LoadInstruction extends IRInstruction {
             use.add(rhs);
             rhs.addUse(this);
         }
+    }
+
+    @Override
+    public IRInstruction copyWrite(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap) {
+        VirtualRegister newLhs = getOrPut(givenCs, virtualMap, lhs);
+        VirtualRegister newRhs = getOrPut(givenCs, virtualMap, ((VirtualRegister) rhs));
+        return new LoadInstruction(op.LOAD, newLhs, newRhs, offset, width);
     }
 
     @Override

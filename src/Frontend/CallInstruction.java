@@ -2,12 +2,15 @@ package Frontend;
 
 import Semantic.Type;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 public class CallInstruction extends IRInstruction {
     private boolean has_return_value;
     VirtualRegister lhs;
+    Type tp;
     int width;
     CodeSegment callee;
     List<VirtualRegister> params;
@@ -15,6 +18,7 @@ public class CallInstruction extends IRInstruction {
         super(o);
         assert o == op.CALL;
         this.lhs = lhs;
+        this.tp = tp;
         this.width = tp.getWidth();
         this.callee = c;
         this.params = p;
@@ -24,11 +28,16 @@ public class CallInstruction extends IRInstruction {
     CallInstruction(op o, Type tp, CodeSegment c, List<VirtualRegister> p) {
         super(o);
         assert o == op.CALL;
-        this.lhs = lhs;
+        this.lhs = null;
+        this.tp = tp;
         this.width = tp.getWidth();
         this.callee = c;
         this.params = p;
         this.has_return_value = false;
+    }
+
+    public VirtualRegister getLhs() {
+        return lhs;
     }
 
     @Override
@@ -37,6 +46,10 @@ public class CallInstruction extends IRInstruction {
             lhs = b;
         else
             assert false;
+    }
+
+    public CodeSegment getCallee() {
+        return callee;
     }
 
     @Override
@@ -87,6 +100,17 @@ public class CallInstruction extends IRInstruction {
             use.add(x);
             x.addUse(this);
         }
+    }
+
+    @Override
+    public IRInstruction copyWrite(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap) {
+        VirtualRegister newLhs = getOrPut(givenCs, virtualMap, lhs);
+        List<VirtualRegister> newParams = new ArrayList<>();
+        params.forEach(p -> {newParams.add(getOrPut(givenCs, virtualMap, p));});
+        if (newLhs == null)
+            return new CallInstruction(op.CALL, tp, callee, newParams);
+        else
+            return new CallInstruction(op.CALL, newLhs, tp, callee, newParams);
     }
 
     @Override

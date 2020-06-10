@@ -3,6 +3,7 @@ package Frontend;
 import Backend.BaseRegister;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class BranchInstruction extends IRInstruction {
@@ -17,6 +18,10 @@ public class BranchInstruction extends IRInstruction {
         this.bop = bop;
         this.r2 = r2;
         this.toBB = toBB;
+    }
+
+    public BasicBlock getToBB() {
+        return toBB;
     }
 
     @Override
@@ -58,6 +63,14 @@ public class BranchInstruction extends IRInstruction {
         r1.addUse(this);
         use.add(r2);
         r2.addUse(this);
+    }
+
+    @Override
+    public IRInstruction copyWrite(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap) {
+        VirtualRegister newr1 = getOrPut(givenCs, virtualMap, r1);
+        VirtualRegister newr2 = getOrPut(givenCs, virtualMap, r2);
+        BasicBlock newToBB = blockMap.get(toBB);
+        return new BranchInstruction(op.BRANCH, newr1, bop, newr2, newToBB);
     }
 
     @Override

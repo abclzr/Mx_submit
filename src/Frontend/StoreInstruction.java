@@ -3,11 +3,13 @@ package Frontend;
 import Semantic.Type;
 
 import java.util.HashSet;
+import java.util.Map;
 
 public class StoreInstruction extends IRInstruction {
     private VirtualRegister addr, value;
     int offset;
     private int width;
+    private Type tp;
 
     StoreInstruction(op o, VirtualRegister a, int addr, VirtualRegister b, Type tp) {
         super(o);
@@ -15,6 +17,7 @@ public class StoreInstruction extends IRInstruction {
         this.addr = a;
         this.offset = addr;
         this.value = b;//may be null
+        this.tp = tp;
         width = tp.getWidth();
     }
 
@@ -59,6 +62,13 @@ public class StoreInstruction extends IRInstruction {
             use.add(value);
             value.addUse(this);
         }
+    }
+
+    @Override
+    public IRInstruction copyWrite(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap) {
+        VirtualRegister newAddr = getOrPut(givenCs, virtualMap, addr);
+        VirtualRegister newValue = getOrPut(givenCs, virtualMap, value);
+        return new StoreInstruction(op.STORE, newAddr, offset, newValue, tp);
     }
 
     @Override

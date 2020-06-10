@@ -54,6 +54,10 @@ public class VirtualRegister extends BaseRegister {
         return write_times;
     }
 
+    public Type getType() {
+        return type;
+    }
+
     public void read_ex(IRInstruction i) {
         ++read_times;
         last_read = i;
@@ -107,11 +111,14 @@ public class VirtualRegister extends BaseRegister {
         this.dirty = false;
     }
 
+    public boolean hasAskedForSpace = false;
+
     public VirtualRegister askForSpace() {
         if (inCodeSegment != null) {
             this.relativeAddress = inCodeSegment.Allocate(this.width);
             this.addr = new Address();
             this.addr.setAddr(this.relativeAddress);
+            hasAskedForSpace = true;
         }
         return this;
     }

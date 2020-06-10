@@ -28,6 +28,15 @@ public class CodeSegment {
     public List<BasicBlock> blocks;
     private Set<BaseRegister> allVirtual;
     private int VirtualNumber = 0;
+    private int callTimes = 0;
+
+    public void addCallTimes() {
+        ++callTimes;
+    }
+
+    public int getCallTimes() {
+        return callTimes;
+    }
 
     public int getVirtualNumber() {
         return VirtualNumber++;
@@ -156,6 +165,22 @@ public class CodeSegment {
 
     public void optimize() {
         BasicBlock cs = headBlock;
+        while (cs != null) {
+            if (cs.getInstList().size() == 1 && cs.getInstList().get(0) instanceof CallInstruction) {
+                BasicBlock pre = cs.getPre();
+                BasicBlock pos = cs.getPos();
+                pre.addInst(cs.getInstList().get(0));
+                pos.getInstList().forEach(i -> {
+                    pre.addInst(i);
+                });
+                pre.setPos(pos.getPos());
+                pre.setPost(pos.getPost());
+                cs = pre;
+            }
+            cs = cs.getPos();
+        }
+
+        cs = headBlock;
         blocks = new ArrayList<>();
         tmp = 0;
         while (cs != null) {
@@ -241,5 +266,42 @@ public class CodeSegment {
 
     public Set<BaseRegister> getAllVregs() {
         return allVirtual;
+    }
+
+    private boolean mayFall = false;
+
+    public void mayFallInLoopCall() {
+        mayFall = true;
+    }
+
+    public boolean isMayFall() {
+        return mayFall;
+    }
+
+    public void inlineAnalysis() {
+        BasicBlock t = headBlock;
+        while (t != null) {
+            t.inlineAnalysis();
+            t = t.getPos();
+        }
+    }
+
+
+    public Map<VirtualRegister, VirtualRegister> copyWrite(CodeSegment givenCs, BasicBlock givenBlock, BasicBlock endBlock, VirtualRegister reV) {
+        Map<VirtualRegister, VirtualRegister> virtualMap = new HashMap<>();
+        Map<BasicBlock, BasicBlock> blockMap = new HashMap<>();
+        BasicBlock nowBlock = headBlock;
+        BasicBlock tmpBlock = givenBlock;
+        while (nowBlock != null) {
+            tmpBlock = tmpBlock.split();
+            blockMap.put(nowBlock, tmpBlock);
+            nowBlock = nowBlock.getPos();
+        }
+        nowBlock = headBlock;
+        while (nowBlock != null) {
+            nowBlock.copyWrite(givenCs, blockMap, virtualMap, endBlock, reV);
+            nowBlock = nowBlock.getPos();
+        }
+        return virtualMap;
     }
 }

@@ -3,6 +3,7 @@ package Frontend;
 import Backend.BaseRegister;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class BinaryInstruction extends IRInstruction {
@@ -387,6 +388,17 @@ public class BinaryInstruction extends IRInstruction {
         }
         def.add(lhs);
         lhs.addDef(this);
+    }
+
+    @Override
+    public IRInstruction copyWrite(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap) {
+        VirtualRegister newLhs = getOrPut(givenCs, virtualMap, lhs);
+        VirtualRegister newRhs1 = getOrPut(givenCs, virtualMap, rhs1);
+        VirtualRegister newRhs2 = getOrPut(givenCs, virtualMap, rhs2);
+        if (is_imm)
+            return new BinaryInstruction(op.BINARY, newLhs, newRhs1, bop, imm_rhs2);
+        else
+            return new BinaryInstruction(op.BINARY, newLhs, newRhs1, bop, newRhs2);
     }
 
     @Override

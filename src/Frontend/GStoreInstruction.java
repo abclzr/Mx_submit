@@ -3,17 +3,20 @@ package Frontend;
 import Semantic.Type;
 
 import java.util.HashSet;
+import java.util.Map;
 
 public class GStoreInstruction extends IRInstruction {
     private VirtualRegister value;
     private String gv;
     private int width;
+    private Type tp;
 
     GStoreInstruction(IRInstruction.op o, String gv, VirtualRegister b, Type tp) {
         super(o);
         assert o == IRInstruction.op.GSTORE;
         this.gv = gv;
         this.value = b;
+        this.tp = tp;
         width = tp.getWidth();
     }
 
@@ -44,6 +47,12 @@ public class GStoreInstruction extends IRInstruction {
         def = new HashSet<>();
         use.add(value);
         value.addUse(this);
+    }
+
+    @Override
+    public IRInstruction copyWrite(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap) {
+        VirtualRegister newValue = getOrPut(givenCs, virtualMap, value);
+        return new GStoreInstruction(op.GSTORE, gv, newValue, tp);
     }
 
     @Override

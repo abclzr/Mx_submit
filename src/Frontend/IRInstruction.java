@@ -3,6 +3,7 @@ package Frontend;
 import Backend.BaseRegister;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 public abstract class IRInstruction {
@@ -10,6 +11,15 @@ public abstract class IRInstruction {
     private IRInstruction preInst;
     private IRInstruction postInst;
     private int id;
+    private boolean needToRemoveInInline = false;
+
+    public void setNeedToRemoveInInline(boolean needToRemoveInInline) {
+        this.needToRemoveInInline = needToRemoveInInline;
+    }
+
+    public boolean isNeedToRemoveInInline() {
+        return needToRemoveInInline;
+    }
 
     protected Set<BaseRegister> use;
     protected Set<BaseRegister> def;
@@ -97,6 +107,20 @@ public abstract class IRInstruction {
     public Set<BaseRegister> getDef() {
         return def;
     }
+
+    public VirtualRegister getOrPut(CodeSegment givenCs, Map<VirtualRegister, VirtualRegister> virtualMap, VirtualRegister v) {
+        if (v == null) return null;
+        if(virtualMap.containsKey(v))
+            return virtualMap.get(v);
+        else {
+            VirtualRegister nv = new VirtualRegister(givenCs, v.getType());
+            if (v.hasAskedForSpace) nv.askForSpace();
+            virtualMap.put(v, nv);
+            return nv;
+        }
+    }
+
+    public abstract IRInstruction copyWrite(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap);
 
     public enum op {RETURN, MALLOC, BINARY, UNARY, COPY, JUMP, CJUMP, BRANCH, PARAM, CALL, ARRAY, LOAD, STORE, SLOAD, SSTORE, GLOAD, GSTORE, SADD, GADD};
 

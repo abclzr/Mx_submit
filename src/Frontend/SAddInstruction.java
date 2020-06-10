@@ -3,25 +3,22 @@ package Frontend;
 import Semantic.Type;
 
 import java.util.HashSet;
+import java.util.Map;
 
 public class SAddInstruction extends IRInstruction {
     VirtualRegister lhs;//rhs is a pointer
+    VirtualRegister rhsForOffset;
     Address offset;
     private int width;
+    private Type tp;
 
-    SAddInstruction(IRInstruction.op o, VirtualRegister lhs, Address addr, Type tp) {
+    SAddInstruction(IRInstruction.op o, VirtualRegister lhs, VirtualRegister rhsForOffset, Type tp) {
         super(o);
         assert o == IRInstruction.op.SADD;
         this.lhs = lhs;
-        this.offset = addr;
-        this.width = tp.getWidth();
-    }
-    SAddInstruction(IRInstruction.op o, VirtualRegister lhs, int addr, Type tp) {
-        super(o);
-        assert o == IRInstruction.op.SADD;
-        this.lhs = lhs;
-        this.offset = new Address();
-        this.offset.setAddr(addr);
+        this.rhsForOffset = rhsForOffset;
+        this.offset = rhsForOffset.getAddr();
+        this.tp = tp;
         this.width = tp.getWidth();
     }
 
@@ -51,6 +48,13 @@ public class SAddInstruction extends IRInstruction {
         def = new HashSet<>();
         def.add(lhs);
         lhs.addDef(this);
+    }
+
+    @Override
+    public IRInstruction copyWrite(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap) {
+        VirtualRegister newLhs = getOrPut(givenCs, virtualMap, lhs);
+        VirtualRegister newRhs = getOrPut(givenCs, virtualMap, rhsForOffset);
+        return new SAddInstruction(op.SADD, newLhs, newRhs, tp);
     }
 
     @Override

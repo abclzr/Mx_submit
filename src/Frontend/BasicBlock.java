@@ -4,6 +4,7 @@ import AST.StatementNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class BasicBlock {
     private CodeSegment enclosureCodeSegment;
@@ -23,6 +24,22 @@ public class BasicBlock {
 
     public BasicBlock getPre() {
         return pre;
+    }
+
+    public void setPre(BasicBlock pre) {
+        this.pre = pre;
+    }
+
+    public void setPos(BasicBlock pos) {
+        this.pos = pos;
+    }
+
+    public void setPred(List<BasicBlock> pred) {
+        this.pred = pred;
+    }
+
+    public void setPost(List<BasicBlock> post) {
+        this.post = post;
     }
 
     public BasicBlock(CodeSegment fa) {
@@ -174,6 +191,51 @@ public class BasicBlock {
             newInstList.add(x);
             x.collectUseAndDef();
             x = x.getPostInst();
+        }
+    }
+
+
+    public void inlineAnalysis() {
+        if (instList.size() != 1) return;
+        if (!(instList.get(0) instanceof CallInstruction)) return;
+        CallInstruction ci = ((CallInstruction) instList.get(0));
+        if (!ci.getCallee().isMayFall()) return;
+        if (ci.getCallee().getCallTimes() > 0) return;
+        Map<VirtualRegister, VirtualRegister> virtualMap = ci.getCallee().copyWrite(enclosureCodeSegment, this, this.pos, ci.getLhs());
+        this.instList.clear();
+        int i = 0;
+        for (var p : ci.getCallee().getParams()) {
+            VirtualRegister newP = virtualMap.getOrDefault(p, null);
+            if (newP != null)
+                this.instList.add(new CopyInstruction(IRInstruction.op.COPY, newP, ci.params.get(i)));
+            i = i + 1;
+        }
+    }
+
+    public void copyWrite(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap, BasicBlock endBlock, VirtualRegister reV) {
+        BasicBlock b = blockMap.get(this);
+        IRInstruction newInst;
+        for (var inst : instList) {
+            if (!inst.isNeedToRemoveInInline()) {
+                if (inst instanceof ReturnInstruction) {
+                    if (reV != null && ((ReturnInstruction) inst).getReturnValue() != null)
+                        b.addInst(((ReturnInstruction) inst).copyWriteForReturn(givenCs, blockMap, virtualMap, reV));
+                    b.addInst(new JumpInstruction(IRInstruction.op.JUMP, endBlock));
+                    b.addPost(endBlock);
+                } else {
+                    newInst = inst.copyWrite(givenCs, blockMap, virtualMap);
+                    b.addInst(newInst);
+                    if (newInst instanceof BranchInstruction) {
+                        b.addPost(((BranchInstruction) newInst).getToBB());
+                    }
+                    if (newInst instanceof CjumpInstruction) {
+                        b.addPost(((CjumpInstruction) newInst).getDes());
+                    }
+                    if (newInst instanceof JumpInstruction) {
+                        b.addPost(((JumpInstruction) newInst).getDes());
+                    }
+                }
+            }
         }
     }
 }

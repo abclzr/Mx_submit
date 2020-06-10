@@ -1,6 +1,7 @@
 package Frontend;
 
 import java.util.HashSet;
+import java.util.Map;
 
 public class JumpInstruction extends IRInstruction {
     BasicBlock des;
@@ -8,6 +9,10 @@ public class JumpInstruction extends IRInstruction {
         super(o);
         assert o == op.JUMP;
         this.des = des;
+    }
+
+    public BasicBlock getDes() {
+        return des;
     }
 
     @Override
@@ -28,6 +33,12 @@ public class JumpInstruction extends IRInstruction {
     public void collectUseAndDef() {
         use = new HashSet<>();
         def = new HashSet<>();
+    }
+
+    @Override
+    public IRInstruction copyWrite(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap) {
+        BasicBlock newDes = blockMap.get(des);
+        return new JumpInstruction(op.JUMP, newDes);
     }
 
     @Override

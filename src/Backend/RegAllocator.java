@@ -35,11 +35,13 @@ public class RegAllocator {
 
     private void exec(CodeSegment func) {
         rebuild(func);
+//        long start = System.currentTimeMillis();
         func.livenessAnalysis();
+//        long end = System.currentTimeMillis();
+//        System.err.println(end-start + "ms");
         build(func);
         makeWorklist();
         do {
-//            System.err.printf("SIZE: %d\n", adjSet.size());
             if (!simplifyWorklist.isEmpty()) simplify();
             else if (!worklistMoves.isEmpty()) coalesce();
             else if (!freezeWorklist.isEmpty()) freeze();

@@ -1,6 +1,7 @@
 package Frontend;
 
 import java.util.HashSet;
+import java.util.Map;
 
 public class ReturnInstruction extends IRInstruction {
     private VirtualRegister returnValue;
@@ -10,6 +11,10 @@ public class ReturnInstruction extends IRInstruction {
         assert o == op.RETURN;
         this.returnValue = returnValue;//May be Null!
         this.enclosureSegment = enclosureSegment;
+    }
+
+    public VirtualRegister getReturnValue() {
+        return returnValue;
     }
 
     @Override
@@ -50,6 +55,16 @@ public class ReturnInstruction extends IRInstruction {
             use.add(returnValue);
             returnValue.addUse(this);
         }
+    }
+
+    @Override
+    public IRInstruction copyWrite(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap) {
+        return null;
+    }
+
+    public IRInstruction copyWriteForReturn(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap, VirtualRegister receiveRev) {
+        VirtualRegister newReV = getOrPut(givenCs, virtualMap, returnValue);
+        return new CopyInstruction(op.COPY, receiveRev, newReV);
     }
 
     @Override

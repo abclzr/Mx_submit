@@ -1,6 +1,7 @@
 package Frontend;
 
 import java.util.HashSet;
+import java.util.Map;
 
 public class MallocInstruction extends IRInstruction {
     VirtualRegister start_addr, malloc_size;
@@ -66,6 +67,16 @@ public class MallocInstruction extends IRInstruction {
             use.add(malloc_size);
             malloc_size.addUse(this);
         }
+    }
+
+    @Override
+    public IRInstruction copyWrite(CodeSegment givenCs, Map<BasicBlock, BasicBlock> blockMap, Map<VirtualRegister, VirtualRegister> virtualMap) {
+        VirtualRegister newStart = getOrPut(givenCs, virtualMap, start_addr);
+        VirtualRegister newMalSize = getOrPut(givenCs, virtualMap, malloc_size);
+        if (is_class_malloc)
+            return new MallocInstruction(op.MALLOC, newStart, malloc_size_int);
+        else
+            return new MallocInstruction(op.MALLOC, newStart, newMalSize);
     }
 
     @Override
