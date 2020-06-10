@@ -326,7 +326,7 @@ public class IRBuilder extends ASTVisitor {
                     case VARDECL:
                         Type type = Type.getType(node.getVarDecl().getType());
                         node.getVarDecl().getVarDecoratorList().forEach(v -> {
-                            VirtualRegister vn = new VirtualRegister(currentSegment, type);
+                            VirtualRegister vn = new VirtualRegister(currentSegment, type).askForSpace();
                             v.getVariableSymbol().setVirtualRegister(vn);
                             if (v.getExpr() != null) {
                                 ComputExprValue(v.getExpr());
