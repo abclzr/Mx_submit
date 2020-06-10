@@ -21,6 +21,7 @@ public class IRBuilder extends ASTVisitor {
     private CodeSegment stringCmp;
     private List<VirtualRegister> globalVarList;
     private List<CodeSegment> defaultConstructorList;
+    public static boolean inlineEnable = true;
     //things to write back:
     //const pool pointer
     //global variable address
@@ -156,6 +157,8 @@ public class IRBuilder extends ASTVisitor {
         globalVarSegment = new CodeSegment(null);
         FunctionSymbol mainSymbol = globalScope.findFuncInScope("main", null);
         CodeSegment mainSegment = mainSymbol.getCodeSegment();
+        if (mainSymbol.getBlockContext().getStatementList().size() > 1000)
+            inlineEnable = false;
 //      currentBlock.addInst(new CallInstruction(IRInstruction.op.CALL, Scope.intType, mainSegment, new ArrayList<>()));
         currentSegment = mainSegment;
         currentBlock = mainSegment.getHeadBlock();
@@ -497,7 +500,8 @@ public class IRBuilder extends ASTVisitor {
                     ComputExprValue(ex);
                     list.add(ex.getVirtualRegister());
                 }
-                currentBlock = currentBlock.split();
+                if (inlineEnable)
+                    currentBlock = currentBlock.split();
                 if (func.getCodeSegment().isMayFall())
                     currentSegment.addCallTimes();
                 if (node.getExprType() != Scope.voidType) {
@@ -508,7 +512,8 @@ public class IRBuilder extends ASTVisitor {
                     currentBlock.addInst(new CallInstruction(IRInstruction.op.CALL, node.getExprType(), func.getCodeSegment(), list));
                     node.setVirtualRegister(null);
                 }
-                currentBlock = currentBlock.split();
+                if (inlineEnable)
+                    currentBlock = currentBlock.split();
                 break;
             case NEW:
                 CreatorNode cr = node.getCreator();

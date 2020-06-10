@@ -61,11 +61,15 @@ public class Main {
             //ps = new PrintStream(new FileOutputStream("test.iro"));
             //System.setOut(out);
 
-            irBuilder.inlineAnalysis();
+            if (IRBuilder.inlineEnable)
+                irBuilder.inlineAnalysis();
             //irBuilder.printall();
+//            long start = System.currentTimeMillis();
             irBuilder.optimize();
 
             irBuilder.registerAllocate();
+//            long end = System.currentTimeMillis();
+//            System.err.println(end-start + "ms");
             ps = new PrintStream(new FileOutputStream("output.s"));
             System.setOut(ps);
 
