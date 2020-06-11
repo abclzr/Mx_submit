@@ -193,6 +193,8 @@ public class IRBuilder extends ASTVisitor {
         defaultConstructorList.forEach(cs -> {
             currentSegment = cs;
             currentBlock = cs.getTailBlock();
+            currentSegment.setMarkForAddGload(currentBlock);
+            currentBlock = currentBlock.split();
             VirtualRegister ra = new VirtualRegister(currentSegment, Scope.intType).askForSpace();
             cs.setRaPointer(ra);
             VirtualRegister th = new VirtualRegister(currentSegment, cs.getClassType()).askForSpace();
@@ -216,6 +218,8 @@ public class IRBuilder extends ASTVisitor {
                 if (cs.getFunctionSymbol().getType() == null) {
                     currentSegment = cs;
                     currentBlock = cs.getTailBlock();
+                    currentSegment.setMarkForAddGload(currentBlock);
+                    currentBlock = currentBlock.split();
                     currentBlock.addInst(new MallocInstruction(IRInstruction.op.MALLOC, cs.getThisPointer(), cs.getClassType().getAllocWidth()));
                     currentSegment.setConstructorReturnValue(cs.getThisPointer());
                     CollectStmt(cs.getFunctionSymbol().getBlockContext().getStatementList(), null, null);
