@@ -6,6 +6,7 @@ import Backend.RegAllocator;
 import Semantic.ClassType;
 import Semantic.FunctionSymbol;
 import Semantic.Scope;
+import Semantic.VariableSymbol;
 
 import java.util.*;
 
@@ -303,5 +304,37 @@ public class CodeSegment {
             nowBlock = nowBlock.getPos();
         }
         return virtualMap;
+    }
+
+    public Map<VirtualRegister, VirtualRegister> globalMap = new HashMap<>();
+
+    public VirtualRegister getOrPutGlobal(VirtualRegister var) {
+        if (globalMap.containsKey(var))
+            return globalMap.get(var);
+        else {
+            VirtualRegister nv = new VirtualRegister(this, var.getType()).askForSpace();
+            globalMap.put(var, nv);
+            return nv;
+        }
+    }
+
+    private BasicBlock markForAddGload = null;
+
+    public void setMarkForAddGload(BasicBlock currentBlock) {
+        markForAddGload = currentBlock;
+    }
+
+    public void globalAnalysis() {
+        BasicBlock tmp = markForAddGload;
+        if (this != IRBuilder.mainSegment) {
+            globalMap.forEach((x, y) -> {
+                tmp.addInst(new GLoadInstruction(IRInstruction.op.GLOAD, y, x.getGlobalVarName(), x.getType()));
+            });
+        }
+        BasicBlock t = headBlock;
+        while (t != null) {
+            t.globalAnalysis();
+            t = t.getPos();
+        }
     }
 }

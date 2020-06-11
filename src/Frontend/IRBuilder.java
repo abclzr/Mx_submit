@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class IRBuilder extends ASTVisitor {
     private CodeSegment globalVarSegment;
+    public static CodeSegment mainSegment;
     private ConstantPoolTable constantPoolTable;
     private List<CodeSegment> segmentList;
     private CodeSegment currentSegment;
@@ -156,7 +157,7 @@ public class IRBuilder extends ASTVisitor {
         //scan global variables
         globalVarSegment = new CodeSegment(null);
         FunctionSymbol mainSymbol = globalScope.findFuncInScope("main", null);
-        CodeSegment mainSegment = mainSymbol.getCodeSegment();
+        mainSegment = mainSymbol.getCodeSegment();
         if (mainSymbol.getBlockContext().getStatementList().size() > 1000)
             inlineEnable = false;
 //      currentBlock.addInst(new CallInstruction(IRInstruction.op.CALL, Scope.intType, mainSegment, new ArrayList<>()));
@@ -171,6 +172,7 @@ public class IRBuilder extends ASTVisitor {
                         VirtualRegister nv = new VirtualRegister(globalVarSegment, type).askForSpace();
                         nv.setGlobalVarName(y.getIdentifier());
                         globalVarList.add(nv);
+                        VirtualRegister nvForMain = currentSegment.getOrPutGlobal(nv);
                         y.getVariableSymbol().setVirtualRegister(nv);
                     } else {
                         ComputExprValue(y.getExpr());
@@ -178,7 +180,10 @@ public class IRBuilder extends ASTVisitor {
                         nv.setGlobalVarName(y.getIdentifier());
                         globalVarList.add(nv);
                         y.getVariableSymbol().setVirtualRegister(nv);
-                        currentBlock.addInst(new GStoreInstruction(IRInstruction.op.GSTORE, nv.getGlobalVarName(), y.getExpr().getVirtualRegister(), type));
+                        VirtualRegister nvForMain = currentSegment.getOrPutGlobal(nv);
+                        currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, nvForMain, y.getExpr().getVirtualRegister()));
+                        nvForMain.setModifiedForGlobal();
+//                        currentBlock.addInst(new GStoreInstruction(IRInstruction.op.GSTORE, nv.getGlobalVarName(), y.getExpr().getVirtualRegister(), type));
                     }
                 });
             }
@@ -231,6 +236,8 @@ public class IRBuilder extends ASTVisitor {
                         }
                         i++;
                     }
+                    currentSegment.setMarkForAddGload(currentBlock);
+                    currentBlock = currentBlock.split();
                     CollectStmt(cs.getFunctionSymbol().getBlockContext().getStatementList(), null, null);
                     currentBlock.addInst(new ReturnInstruction(IRInstruction.op.RETURN, null, currentSegment));
                 }
@@ -433,8 +440,9 @@ public class IRBuilder extends ASTVisitor {
                     Address offset;
                     if (varReg != null) {
                         if (varReg.getInCodeSegment() == globalVarSegment) {
-                            vn = new VirtualRegister(currentSegment, var.getType());
-                            currentBlock.addInst(new GLoadInstruction(IRInstruction.op.GLOAD, vn, varReg.getGlobalVarName(), var.getType()));
+                            vn = currentSegment.getOrPutGlobal(varReg);
+//                            vn = new VirtualRegister(currentSegment, var.getType());
+//                            currentBlock.addInst(new GLoadInstruction(IRInstruction.op.GLOAD, vn, varReg.getGlobalVarName(), var.getType()));
                             node.setVirtualRegister(vn);
                         } else {
                             node.setVirtualRegister(varReg);
@@ -536,15 +544,29 @@ public class IRBuilder extends ASTVisitor {
                 if (node.getPostExpr().getType() == ExpressionNode.Type.IDENTIFIER) {
                     VariableSymbol var = node.getPostExpr().getScope().findVar(node.getPostExpr().getIdentifier(), node.getPosition());
                     VirtualRegister varReg = var.getVirtualRegister();
-                    if (varReg != null && varReg.getInCodeSegment() != globalVarSegment) {
-                        vn = new VirtualRegister(currentSegment, Scope.intType);
-                        currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, varReg));
-                        if(node.getOp().equals("++"))
-                            currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "+", 1));
-                        else
-                            currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "-", 1));
-                        node.setVirtualRegister(vn);
-                        break;
+                    if (varReg != null) {
+                        if (varReg.getInCodeSegment() != globalVarSegment) {
+                            vn = new VirtualRegister(currentSegment, Scope.intType);
+                            currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, varReg));
+                            if (node.getOp().equals("++"))
+                                currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "+", 1));
+                            else
+                                currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "-", 1));
+                            node.setVirtualRegister(vn);
+                            break;
+                        } else {
+                            varReg = currentSegment.getOrPutGlobal(varReg);
+                            assert varReg.getInCodeSegment() != globalVarSegment;
+                            vn = new VirtualRegister(currentSegment, Scope.intType);
+                            currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, vn, varReg));
+                            if (node.getOp().equals("++"))
+                                currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "+", 1));
+                            else
+                                currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "-", 1));
+                            node.setVirtualRegister(vn);
+                            varReg.setModifiedForGlobal();
+                            break;
+                        }
                     }
                 }
                 ComputExprAddr(node.getPostExpr());
@@ -570,13 +592,25 @@ public class IRBuilder extends ASTVisitor {
                         if (node.getPreExpr().getType() == ExpressionNode.Type.IDENTIFIER) {
                             VariableSymbol var = node.getPreExpr().getScope().findVar(node.getPreExpr().getIdentifier(), node.getPosition());
                             VirtualRegister varReg = var.getVirtualRegister();
-                            if (varReg != null && varReg.getInCodeSegment() != globalVarSegment) {
-                                if(node.getOp().equals("++"))
-                                    currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "+", 1));
-                                else
-                                    currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "-", 1));
-                                node.setVirtualRegister(varReg);
-                                break;
+                            if (varReg != null) {
+                                if (varReg.getInCodeSegment() != globalVarSegment) {
+                                    if (node.getOp().equals("++"))
+                                        currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "+", 1));
+                                    else
+                                        currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "-", 1));
+                                    node.setVirtualRegister(varReg);
+                                    break;
+                                } else {
+                                    varReg = currentSegment.getOrPutGlobal(varReg);
+                                    assert varReg.getInCodeSegment() != globalVarSegment;
+                                    if (node.getOp().equals("++"))
+                                        currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "+", 1));
+                                    else
+                                        currentBlock.addInst(new BinaryInstruction(IRInstruction.op.BINARY, varReg, varReg, "-", 1));
+                                    node.setVirtualRegister(varReg);
+                                    varReg.setModifiedForGlobal();
+                                    break;
+                                }
                             }
                         }
                         ComputExprAddr(node.getPreExpr());
@@ -633,12 +667,23 @@ public class IRBuilder extends ASTVisitor {
                         if (node.getBinaryExpr1().getType() == ExpressionNode.Type.IDENTIFIER) {
                             VariableSymbol var = node.getBinaryExpr1().getScope().findVar(node.getBinaryExpr1().getIdentifier(), node.getPosition());
                             VirtualRegister varReg = var.getVirtualRegister();
-                            if (varReg != null && varReg.getInCodeSegment() != globalVarSegment) {
-                                ComputExprValue(node.getBinaryExpr2());
-                                r2 = node.getBinaryExpr2().getVirtualRegister();
-                                currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, varReg, r2));
-                                node.setVirtualRegister(varReg);
-                                break;
+                            if (varReg != null) {
+                                if (varReg.getInCodeSegment() != globalVarSegment) {
+                                    ComputExprValue(node.getBinaryExpr2());
+                                    r2 = node.getBinaryExpr2().getVirtualRegister();
+                                    currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, varReg, r2));
+                                    node.setVirtualRegister(varReg);
+                                    break;
+                                } else {
+                                    varReg = currentSegment.getOrPutGlobal(varReg);
+                                    assert varReg.getInCodeSegment() != globalVarSegment;
+                                    ComputExprValue(node.getBinaryExpr2());
+                                    r2 = node.getBinaryExpr2().getVirtualRegister();
+                                    currentBlock.addInst(new CopyInstruction(IRInstruction.op.COPY, varReg, r2));
+                                    node.setVirtualRegister(varReg);
+                                    varReg.setModifiedForGlobal();
+                                    break;
+                                }
                             }
                         }
                         ComputExprAddr(node.getBinaryExpr1());
@@ -780,9 +825,11 @@ public class IRBuilder extends ASTVisitor {
                         offset = varReg.getAddr();
                         vn = new VirtualRegister(currentSegment, Scope.intType);
                         if (varReg.getInCodeSegment() == globalVarSegment) {
+//                            assert false;
                             currentBlock.addInst(new LAInstruction(IRInstruction.op.GADD, vn, varReg.getGlobalVarName(), var.getType()));
                             node.setVirtualRegister(vn);
                         } else {
+//                            assert false;
                             currentBlock.addInst(new SAddInstruction(IRInstruction.op.SADD, vn, varReg, var.getType()));
                             node.setVirtualRegister(vn);
                         }
@@ -1036,6 +1083,12 @@ public class IRBuilder extends ASTVisitor {
         for (var cs : segmentList) {
             if (cs.getCallTimes() <= 200)
                 cs.inlineAnalysis();
+        }
+    }
+
+    public void globalAnalysis() {
+        for (var cs : segmentList) {
+            cs.globalAnalysis();
         }
     }
 }

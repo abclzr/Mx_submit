@@ -61,6 +61,8 @@ public class Main {
             //ps = new PrintStream(new FileOutputStream("test.iro"));
             //System.setOut(out);
 
+            irBuilder.globalAnalysis();
+
             if (IRBuilder.inlineEnable)
                 irBuilder.inlineAnalysis();
             //irBuilder.printall();

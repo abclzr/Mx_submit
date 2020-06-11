@@ -142,4 +142,12 @@ public class VirtualRegister extends BaseRegister {
     public void setAddr(Address addr) {
         this.addr = addr;
     }
+
+    private boolean modifiedForGlobal = false;
+
+    public void setModifiedForGlobal() {modifiedForGlobal = true;}
+
+    public boolean isModifiedForGlobal() {
+        return modifiedForGlobal;
+    }
 }

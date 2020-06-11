@@ -238,4 +238,36 @@ public class BasicBlock {
             }
         }
     }
+
+    public void globalAnalysis() {
+        for (int i = 0; i < instList.size(); ) {
+            IRInstruction ir = instList.get(i);
+            List<IRInstruction> list1 = new ArrayList<>();
+            List<IRInstruction> list2 = new ArrayList<>();
+            if (ir instanceof CallInstruction && ((CallInstruction) ir).getCallee().isMayFall()) {
+                enclosureCodeSegment.globalMap.forEach((x, y) -> {
+                    if (y.isModifiedForGlobal())
+                        list1.add(new GStoreInstruction(IRInstruction.op.GSTORE, x.getGlobalVarName(), y, x.getType()));
+                });
+                enclosureCodeSegment.globalMap.forEach((x, y) -> {
+                    list2.add(new GLoadInstruction(IRInstruction.op.GLOAD, y, x.getGlobalVarName(), x.getType()));
+                });
+            }
+            if (ir instanceof ReturnInstruction) {
+                enclosureCodeSegment.globalMap.forEach((x, y) -> {
+                    if (y.isModifiedForGlobal())
+                        list1.add(new GStoreInstruction(IRInstruction.op.GSTORE, x.getGlobalVarName(), y, x.getType()));
+                });
+            }
+            for (var l1 : list1) {
+                instList.add(i, l1);
+                i++;
+            }
+            i++;
+            for (var l2 : list2) {
+                instList.add(i, l2);
+                i++;
+            }
+        }
+    }
 }
